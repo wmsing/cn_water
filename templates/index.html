@@ -375,6 +375,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                        {% for stock in stocks %}
                         {% set today_val = stock['diff_today'] %}
                         {% set w1_val = stock['diff_1_7d'] %}
                         {% set m1_val = stock['diff_M1'] %}
