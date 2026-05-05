@@ -507,11 +507,11 @@
                                 <a href="/?sort=volume_ratio_20d&order={{ 'ASC' if sort_by=='volume_ratio_20d' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">量比20</a>
                             </small>
                         </th>
-                        <th><a href="/?sort=market_cap&order={{ 'ASC' if sort_by=='market_cap' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">市值(億) {{ '▼' if sort_by=='market_cap' and order=='DESC' else ('▲' if sort_by=='market_cap' else '') }}</a></th>
+                        <th style="width: 65px; font-size: 0.75rem;"><a href="/?sort=market_cap&order={{ 'ASC' if sort_by=='market_cap' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">市值(億) {{ '▼' if sort_by=='market_cap' and order=='DESC' else ('▲' if sort_by=='market_cap' else '') }}</a></th>
                         <th class="d-none d-lg-table-cell">股權集中度</th>
                         <th>趨勢信號</th>
-                        <th>
-                            <a href="/?sort=trend_score&order={{ 'ASC' if sort_by=='trend_score' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.8rem;">
+                        <th style="width: 55px;">
+                            <a href="/?sort=trend_score&order={{ 'ASC' if sort_by=='trend_score' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.7rem;">
                                 升勢分 {{ '▼' if sort_by=='trend_score' and order=='DESC' else ('▲' if sort_by=='trend_score' else '') }}
                             </a>
                         </th>
@@ -628,12 +628,12 @@
                             <div class="text-muted asof-note">截至 {{ stock.price_asof }}</div>
                             {% endif %}
                         </td>
-                        <td class="market-cap-cell" data-code="{{ stock.stock_code }}">
+                        <td class="market-cap-cell" data-code="{{ stock.stock_code }}" style="width: 65px; font-size: 0.75rem;">
                             <div class="market-cap-value">{{ "%.1f"|format(stock.market_cap / 100000000.0) if stock.market_cap else "-" }}</div>
                             {% if stock.market_cap_asof and stock.market_cap_asof != base_date %}
-                            <div class="text-muted asof-note">截至 {{ stock.market_cap_asof }}</div>
+                            <div class="text-muted asof-note" style="font-size: 0.65rem;">截至 {{ stock.market_cap_asof }}</div>
                             {% endif %}
-                            <button class="btn btn-sm btn-outline-primary refresh-btn mt-1" data-code="{{ stock.stock_code }}">更新市值</button>
+                            <button class="btn btn-sm btn-outline-primary refresh-btn mt-1" data-code="{{ stock.stock_code }}" style="font-size: 0.65rem; padding: 2px 4px;">更新市值</button>
                         </td>
                         <td class="concentration-cell d-none d-lg-table-cell {{ 'top5-high-bg' if stock.concentration_top5 is not none and stock.concentration_top5 > 90 else '' }}" data-code="{{ stock.stock_code }}" style="font-size: 0.76rem; line-height: 1.2;">
                             <div>Top5: <span class="conc-top5">{{ "%.2f"|format(stock.concentration_top5) if stock.concentration_top5 is not none else "-" }}</span>%</div>
@@ -651,9 +651,9 @@
                             <span class="text-muted" style="font-size: 0.7rem;">-</span>
                             {% endfor %}
                         </td>
-                        <td>
-                            <div class="fw-bold">{{ "%.1f"|format(stock.trend_score) }}</div>
-                            <span class="badge bg-{{ stock.trend_score_color }}" style="font-size: 0.7rem;">{{ stock.trend_score_label }}</span>
+                        <td style="width: 55px;">
+                            <div class="fw-bold" style="font-size: 0.85rem;">{{ "%.1f"|format(stock.trend_score) }}</div>
+                            <span class="badge bg-{{ stock.trend_score_color }}" style="font-size: 0.65rem;">{{ stock.trend_score_label }}</span>
                         </td>
                         <td class="fw-bold">{{ "%.2f"|format(stock.curr_pct) }}%</td>
                         
