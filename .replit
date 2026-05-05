@@ -1,5 +1,5 @@
-run = "python cn_water/app.py"
-entrypoint = "cn_water/app.py"
+run = "python app.py"
+entrypoint = "app.py"
 
 [env]
 PYTHONUNBUFFERED = "1"

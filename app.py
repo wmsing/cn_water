@@ -17,9 +17,9 @@ except Exception:
     cloudscraper = None
 
 app = Flask(__name__)
-# 支持 Replit 和本地運行
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.getenv('DB_PATH', os.path.join(BASE_DIR, 'cn_water', 'hkex_southbound.db'))
+# 支持 Replit 和本地運行（獨立仓库）
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.getenv('DB_PATH', os.path.join(BASE_DIR, 'hkex_southbound.db'))
 
 # 英文行業自動轉中文；無對應時保留英文
 SECTOR_ZH_MAP = {
