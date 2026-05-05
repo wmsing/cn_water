@@ -374,7 +374,7 @@
                                 <input id="listing-months-input" type="number" class="form-control" min="1" step="1" value="{{ recent_listing_months if recent_listing_months is not none else 24 }}">
                             </div>
                         </div>
-                        
+
                         <!-- 全部 + 次新股 在同一行 -->
                         <div class="col-auto">
                             <div class="btn-group btn-group-sm" role="group">
@@ -495,8 +495,7 @@
                 <thead class="table-dark">
                     <tr>
                         <th style="width: 40px;" class="hide-on-mobile"></th>
-                        <th class="text-start">代碼</th>
-                        <th class="text-start d-none d-md-table-cell">名稱</th>
+                        <th class="text-start">代碼<br><span style="font-size: 0.8rem; opacity: 0.8;">名稱</span></th>
                         <th class="d-none d-lg-table-cell"><a href="/?sort=listing_date&order={{ 'ASC' if sort_by=='listing_date' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">上市日 {{ '▼' if sort_by=='listing_date' and order=='DESC' else ('▲' if sort_by=='listing_date' else '') }}</a></th>
                         <th>
                             <a href="/?sort=turnover_rate_float&order={{ 'ASC' if sort_by=='turnover_rate_float' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.8rem;">
@@ -580,8 +579,10 @@
                                     {{ '已收' if stock.is_bookmarked else '收藏' }}
                                 </button>
                             </td>
-                            <td class="text-start">{{ stock.stock_code }}</td>
-                            <td class="text-start d-none d-md-table-cell" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stock.stock_name }}</td>
+                            <td class="text-start">
+                                <div>{{ stock.stock_code }}</div>
+                                <div style="font-size: 0.85rem; color: #666;">{{ stock.stock_name }}</div>
+                            </td>
                             <td class="listing-date-cell d-none d-lg-table-cell" data-code="{{ stock.stock_code }}" style="font-size: 0.8rem; color: #666;">
                             <div class="listing-date-value">{{ stock.listing_date or '?' }}</div>
                             {% if stock.listing_date and stock.listing_date is string and '-' in stock.listing_date %}
