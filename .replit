@@ -1,0 +1,9 @@
+run = "python cn_water/app.py"
+entrypoint = "cn_water/app.py"
+
+[env]
+PYTHONUNBUFFERED = "1"
+FLASK_ENV = "production"
+
+[nix]
+channel = "stable-22_11"

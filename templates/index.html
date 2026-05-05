@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>港股通持股變動分析</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding: 20px; }
+        .positive { color: #d63031; font-weight: bold; } /* 港股上漲通常用紅色 */
+        .negative { color: #27ae60; font-weight: bold; } /* 港股下跌通常用綠色 */
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .table th, .table td { white-space: nowrap; padding: 0.5rem 0.4rem; vertical-align: middle; }
+        .table-scroll-wrapper { max-height: calc(100vh - 160px); overflow-y: auto; }
+        .table-scroll-wrapper thead th { position: sticky; top: 0; z-index: 2; }
+        .trend-up-bg { background-color: #d1e7dd !important; }
+        .trend-up-bg-dark { background-color: #1a6e3c !important; color: #fff !important; }
+        .trend-up-bg-yellow { background-color: #ffff00 !important; color: #000 !important; }
+        .top5-high-bg { background-color: #d1e7dd !important; }
+        .detail-hot-bg { background-color: #fff3cd !important; }
+        .asof-note { font-size: 0.58rem; }
+        .row-highlight { background-color: rgba(255, 255, 0, 0.15) !important; outline: 3px solid #ffff00; }
+        .row-highlight td { border-top: 3px solid #ffff00 !important; border-bottom: 3px solid #ffff00 !important; }
+        .row-highlight td:first-child { border-left: 3px solid #ffff00 !important; }
+        .row-highlight td:last-child { border-right: 3px solid #ffff00 !important; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h4 class="mb-2">港股通持股變動</h4>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-column align-items-start">
+                <div class="d-flex align-items-center flex-wrap">
+                    <form action="/" method="get" class="me-3 mb-2 mb-md-0">
+                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                        <input type="hidden" name="order" value="{{ order }}">
+                        <input type="hidden" name="base_date" value="{{ base_date }}">
+                        {% if recent_listing_months is not none %}
+                        <input type="hidden" name="recent_listing_months" value="{{ recent_listing_months }}">
+                        {% endif %}
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="代碼或名稱..." value="{{ search }}">
+                            <select name="sector" class="form-select" style="max-width: 130px;">
+                                <option value="">所有板塊</option>
+                                {% for eng, zh in sector_map.items() %}
+                                <option value="{{ zh }}" {% if current_sector == zh %}selected{% endif %}>{{ zh }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="industry" class="form-select" style="max-width: 150px;">
+                                <option value="">所有細分板塊</option>
+                                {% for eng, zh in industry_map.items() %}
+                                <option value="{{ zh }}" {% if current_industry == zh %}selected{% endif %}>{{ zh }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="input-group-text">最小市值(億)</span>
+                            <input type="number" name="min_market_cap" class="form-control" min="0" step="0.1" style="max-width: 100px;" value="{{ min_market_cap if min_market_cap is not none else '' }}">
+                            <button class="btn btn-outline-primary" type="submit">搜尋</button>
+                            {% if search or min_market_cap is not none or current_sector or current_industry or show_bookmarks_only %}
+                            <a href="/?sort={{ sort_by }}&order={{ order }}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="btn btn-outline-secondary">清除</a>
+                            {% endif %}
+                        </div>
+                    </form>
+                    <form action="/" method="get" class="d-flex align-items-center me-3 mb-2 mb-md-0">
+                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                        <input type="hidden" name="order" value="{{ order }}">
+                        {% if search %}
+                        <input type="hidden" name="search" value="{{ search }}">
+                        {% endif %}
+                        {% if current_sector %}
+                        <input type="hidden" name="sector" value="{{ current_sector }}">
+                        {% endif %}
+                        {% if current_industry %}
+                        <input type="hidden" name="industry" value="{{ current_industry }}">
+                        {% endif %}
+                        {% if show_bookmarks_only %}
+                        <input type="hidden" name="bookmarks_only" value="1">
+                        {% endif %}
+                        {% if min_market_cap is not none %}
+                        <input type="hidden" name="min_market_cap" value="{{ min_market_cap }}">
+                        {% endif %}
+                        {% if recent_listing_months is not none %}
+                        <input type="hidden" name="recent_listing_months" value="{{ recent_listing_months }}">
+                        {% endif %}
+                        <span class="me-2 text-muted small">基準日</span>
+                        <input type="date" name="base_date" class="form-control form-control-sm me-2" style="width: 160px;" min="{{ earliest_date }}" max="{{ latest_date }}" value="{{ base_date }}">
+                        <button class="btn btn-sm btn-outline-dark me-2" type="submit">回放</button>
+                        <a href="/?sort={{ sort_by }}&order={{ order }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if current_sector %}&sector={{ current_sector|urlencode }}{% endif %}{% if current_industry %}&industry={{ current_industry|urlencode }}{% endif %}{% if show_bookmarks_only %}&bookmarks_only=1{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="btn btn-sm btn-outline-secondary">最新</a>
+                    </form>
+                    <div class="input-group input-group-sm me-2 mb-2 mb-md-0" style="width: 90px;">
+                        <span class="input-group-text">月</span>
+                        <input id="listing-months-input" type="number" class="form-control" min="1" step="1" value="{{ recent_listing_months if recent_listing_months is not none else 24 }}">
+                    </div>
+                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group" aria-label="次新股切換">
+                        <button id="listing-filter-all-btn" type="button" class="btn {{ 'btn-secondary text-white' if recent_listing_months is none else 'btn-outline-secondary' }}">全部</button>
+                        <button id="listing-filter-recent-btn" type="button" class="btn {{ 'btn-info text-white' if recent_listing_months is not none else 'btn-outline-info' }}">只看次新股</button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group">
+                        <button id="toggle-highlight-btn" type="button" class="btn btn-outline-warning">只看高亮行</button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group">
+                        <a href="/?bookmarks_only={{ '0' if show_bookmarks_only else '1' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if current_sector %}&sector={{ current_sector|urlencode }}{% endif %}{% if current_industry %}&industry={{ current_industry|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" 
+                           class="btn {{ 'btn-warning' if show_bookmarks_only else 'btn-outline-warning' }}">
+                            {{ '顯示全部' if show_bookmarks_only else '只看書籤' }}
+                        </a>
+                    </div>
+                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group">
+                        <button id="sync-hkex-btn" type="button" class="btn btn-primary" title="同步最近 5 天港交所持股數據">同步今日持股</button>
+                    </div>
+                    <div class="text-muted small">
+                        基準日: {{ base_date }}
+                        &nbsp;|&nbsp;最新日: {{ latest_date }}
+                        {% if min_market_cap is not none %}
+                        &nbsp;|&nbsp;最小市值: {{ "%.1f"|format(min_market_cap) }} 億
+                        {% endif %}
+                        {% if recent_listing_months is not none %}
+                        &nbsp;|&nbsp;次新股: {{ recent_listing_months }} 個月內
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="d-flex align-items-center flex-wrap mt-2">
+                    <div class="input-group input-group-sm me-2" style="width: 180px;">
+                        <span class="input-group-text">上限數量</span>
+                        <input id="bulk-limit-input" type="number" class="form-control" min="1" step="1" value="20">
+                    </div>
+                    <button id="bulk-refresh-btn" class="btn btn-sm btn-outline-danger me-2">批量更新缺失 - 市值/詳細</button>
+                    <button id="bulk-refresh-force-btn" class="btn btn-sm btn-outline-warning me-3">強制批量更新 - 市值/詳細</button>
+                    <div class="input-group input-group-sm me-2" style="width: 130px;">
+                        <span class="input-group-text">上限</span>
+                        <input id="listing-limit-input" type="number" class="form-control" min="1" step="1" value="20">
+                    </div>
+                    <button id="listing-refresh-btn" class="btn btn-sm btn-outline-secondary me-3">更新上市日</button>
+                    <button id="concentration-refresh-btn" class="btn btn-sm btn-outline-success me-2">批量更新集中度</button>
+                    <button id="concentration-refresh-force-btn" class="btn btn-sm btn-outline-success me-3">強制批量更新集中度</button>
+                    <div class="text-muted mt-1 mt-md-0" style="font-size: 0.68rem; line-height: 1.25;">
+                        <div>
+                            {% if missing_market_cap_count > 0 %}
+                            <span class="text-warning fw-bold">⚠ 缺市值: {{ missing_market_cap_count }} 檔</span>
+                            {% else %}
+                            <span class="text-success">✓ 市值完整</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if missing_listing_date_count > 0 %}
+                            <span class="text-secondary">⚠ 缺上市日: {{ missing_listing_date_count }} 檔</span>
+                            {% else %}
+                            <span class="text-success">✓ 上市日完整</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if missing_turnover_count > 0 %}
+                            <span class="text-secondary">⚠ 缺換手率: {{ missing_turnover_count }} 檔</span>
+                            {% else %}
+                            <span class="text-success">✓ 換手率完整</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if missing_vr5d_count > 0 %}
+                            <span class="text-secondary">⚠ 缺量比(5日): {{ missing_vr5d_count }} 檔</span>
+                            {% else %}
+                            <span class="text-success">✓ 量比(5日)完整</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if missing_vr20d_count > 0 %}
+                            <span class="text-secondary">⚠ 缺量比(20日): {{ missing_vr20d_count }} 檔</span>
+                            {% else %}
+                            <span class="text-success">✓ 量比(20日)完整</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-responsive table-scroll-wrapper bg-white rounded shadow-sm">
+            <table class="table table-hover mb-0 text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th class="text-start">代碼</th>
+                        <th class="text-start">名稱</th>
+                        <th><a href="/?sort=listing_date&order={{ 'ASC' if sort_by=='listing_date' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">上市日 {{ '▼' if sort_by=='listing_date' and order=='DESC' else ('▲' if sort_by=='listing_date' else '') }}</a></th>
+                        <th>
+                            <a href="/?sort=turnover_rate_float&order={{ 'ASC' if sort_by=='turnover_rate_float' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.8rem;">
+                                詳細 {{ '▼' if sort_by=='turnover_rate_float' and order=='DESC' else ('▲' if sort_by=='turnover_rate_float' else '') }}
+                            </a>
+                            <br><small style="font-size: 0.65rem; opacity: 0.8;">
+                                <a href="/?sort=volume_ratio_5d&order={{ 'ASC' if sort_by=='volume_ratio_5d' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">量比5</a>
+                                /
+                                <a href="/?sort=volume_ratio_20d&order={{ 'ASC' if sort_by=='volume_ratio_20d' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">量比20</a>
+                            </small>
+                        </th>
+                        <th><a href="/?sort=market_cap&order={{ 'ASC' if sort_by=='market_cap' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">市值(億) {{ '▼' if sort_by=='market_cap' and order=='DESC' else ('▲' if sort_by=='market_cap' else '') }}</a></th>
+                        <th>股權集中度</th>
+                        <th>趨勢信號</th>
+                        <th>
+                            <a href="/?sort=trend_score&order={{ 'ASC' if sort_by=='trend_score' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.8rem;">
+                                升勢分 {{ '▼' if sort_by=='trend_score' and order=='DESC' else ('▲' if sort_by=='trend_score' else '') }}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="/?sort=curr_pct&order={{ 'ASC' if sort_by=='curr_pct' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.8rem;">
+                                北水佔比 {{ '▼' if sort_by=='curr_pct' and order=='DESC' else ('▲' if sort_by=='curr_pct' else '') }}
+                            </a>
+                        </th>
+                        {% for p in display_periods %}
+                        <th{% if p == 'M1' or p == '1m' %} style="border-left: 2px solid rgba(255,255,255,0.5);"{% endif %}>
+                            <a href="/?sort=diff_{{ p }}&order={{ 'ASC' if sort_by=='diff_'~p and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.75rem;" title="{{ period_desc[p] }}">
+                                {{ p.replace('_', '-') }}<br><small style="font-size: 0.65rem; opacity: 0.8;">{% if p == 'today' %}{{ base_date }}變動{% else %}{{ period_desc[p] }}{% endif %}</small> {{ '▼' if sort_by=='diff_'~p and order=='DESC' else ('▲' if sort_by=='diff_'~p else '') }}
+                            </a>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                        {% set today_val = stock['diff_today'] %}
+                        {% set w1_val = stock['diff_1_7d'] %}
+                        {% set m1_val = stock['diff_M1'] %}
+                        {% set w3_val = stock['diff_15_21d'] %}
+                        {% set w4_val = stock['diff_22_28d'] %}
+                        {% set m4_val = stock['diff_M4'] %}
+                        {% set m5_val = stock['diff_M5'] %}
+
+                        {# Check M1 yellow logic #}
+                        {% set max_m4_m5 = none %}
+                        {% if m4_val is not none and m5_val is not none %}
+                            {% set max_m4_m5 = (m4_val if m4_val > m5_val else m5_val) %}
+                        {% elif m4_val is not none %}
+                            {% set max_m4_m5 = m4_val %}
+                        {% elif m5_val is not none %}
+                            {% set max_m4_m5 = m5_val %}
+                        {% endif %}
+                        {% set m1_is_yellow = (m1_val is not none and max_m4_m5 is not none and m1_val >= max_m4_m5) %}
+
+                        {# Check Today/W1 yellow logic #}
+                        {% set max_w3_w4 = none %}
+                        {% if w3_val is not none and w4_val is not none %}
+                            {% set max_w3_w4 = (w3_val if w3_val > w4_val else w4_val) %}
+                        {% elif w3_val is not none %}
+                            {% set max_w3_w4 = w3_val %}
+                        {% elif w4_val is not none %}
+                            {% set max_w3_w4 = w4_val %}
+                        {% endif %}
+                        
+                        {% set combined_recent = (today_val if today_val is not none else 0) + (w1_val if w1_val is not none else 0) %}
+                        {% set recent_flow_strong = (max_w3_w4 is not none and combined_recent > max_w3_w4) %}
+
+                        {% set today_is_yellow = (today_val is not none and max_w3_w4 is not none and today_val >= max_w3_w4) %}
+                        {% set w1_is_yellow = (w1_val is not none and max_w3_w4 is not none and w1_val >= max_w3_w4) %}
+
+                        {# New rule: M1 >= 0 and 1-7d >= 0 #}
+                        {% set m1_not_negative = (m1_val is not none and m1_val >= 0) %}
+                        {% set w1_not_negative = (w1_val is not none and w1_val >= 0) %}
+
+                        <tr class="{{ 'row-highlight' if recent_flow_strong and m1_is_yellow and m1_not_negative and w1_not_negative else '' }}" data-listing="{{ stock.listing_date or '' }}">
+                            <td>
+                                <button class="btn btn-sm {{ 'btn-warning' if stock.is_bookmarked else 'btn-outline-secondary' }} bookmark-btn" 
+                                        data-code="{{ stock.stock_code }}" 
+                                        style="padding: 2px 5px; font-size: 0.75rem; min-width: 50px;" 
+                                        onclick="toggleBookmark(this)">
+                                    {{ '已收' if stock.is_bookmarked else '收藏' }}
+                                </button>
+                            </td>
+                            <td class="text-start">{{ stock.stock_code }}</td>
+                        <td class="text-start" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stock.stock_name }}</td>
+                        <td class="listing-date-cell" data-code="{{ stock.stock_code }}" style="font-size: 0.8rem; color: #666;">
+                            <div class="listing-date-value">{{ stock.listing_date or '?' }}</div>
+                            {% if stock.listing_date and stock.listing_date is string and '-' in stock.listing_date %}
+                                {% set ld_parts = stock.listing_date.split('-') %}
+                                {% set ld_dt = namespace(year=ld_parts[0]|int, month=ld_parts[1]|int, day=ld_parts[2]|int) %}
+                                
+                                {# Calculate 6 months date #}
+                                {% set m6_month = ld_dt.month + 6 %}
+                                {% set m6_year = ld_dt.year + (m6_month - 1) // 12 %}
+                                {% set m6_month = (m6_month - 1) % 12 + 1 %}
+                                
+                                {# Calculate 1 year date #}
+                                {% set y1_year = ld_dt.year + 1 %}
+                                
+                                <div style="font-size:0.65rem; color:#888; margin-top: 2px;">
+                                    半年: {{ "%04d-%02d-%02d"|format(m6_year, m6_month, ld_dt.day) }}<br>
+                                    1年: {{ "%04d-%02d-%02d"|format(y1_year, ld_dt.month, ld_dt.day) }}
+                                </div>
+
+                                {% set bd_parts = base_date.split('-') %}
+                                {% set months_diff = (bd_parts[0]|int - ld_parts[0]|int) * 12 + (bd_parts[1]|int - ld_parts[1]|int) %}
+                                {% if months_diff < 6 %}
+                                    <div style="font-size:0.7rem; color:#c0392b; font-weight:600;">少於半年</div>
+                                {% elif months_diff < 12 %}
+                                    <div style="font-size:0.7rem; color:#e67e22; font-weight:600;">半年</div>
+                                {% elif months_diff < 18 %}
+                                    <div style="font-size:0.7rem; color:#27ae60; font-weight:600;">1年</div>
+                                {% elif months_diff < 24 %}
+                                    <div style="font-size:0.7rem; color:#2980b9; font-weight:600;">1年半</div>
+                                {% endif %}
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline-secondary refresh-listing-btn mt-1" data-code="{{ stock.stock_code }}">更新</button>
+                        </td>
+                        <td class="price-cell {{ 'detail-hot-bg' if (stock.volume_ratio_5d is not none and stock.volume_ratio_5d >= 1.3) or (stock.turnover_rate_float is not none and stock.turnover_rate_float >= 0.03) else '' }}" data-code="{{ stock.stock_code }}" style="font-size: 0.78rem; line-height: 1.2;">
+                            <div class="detail-sector text-muted">{{ stock.sector if stock.sector else '-' }}</div>
+                            <div class="detail-industry text-muted">{{ stock.industry if stock.industry else '-' }}</div>
+                            <div class="detail-price fw-semibold">{{ "%.2f"|format(stock.price) if stock.price else "-" }}</div>
+                            <div class="detail-52w text-muted asof-note">52W: {{ "%.2f"|format(stock.fifty_two_week_high) if stock.fifty_two_week_high is not none else "-" }} / {{ "%.2f"|format(stock.fifty_two_week_low) if stock.fifty_two_week_low is not none else "-" }}</div>
+                            <div class="detail-turnover text-muted asof-note">換手率: {{ "%.2f"|format(stock.turnover_rate_float * 100) if stock.turnover_rate_float is not none else "-" }}%</div>
+                            <div class="detail-vr5 text-muted asof-note">量比(5日): {{ "%.2f"|format(stock.volume_ratio_5d) if stock.volume_ratio_5d is not none else "-" }}</div>
+                            <div class="detail-vr20 text-muted asof-note">量比(20日): {{ "%.2f"|format(stock.volume_ratio_20d) if stock.volume_ratio_20d is not none else "-" }}</div>
+                            {% if stock.price_asof and stock.price_asof != base_date %}
+                            <div class="text-muted asof-note">截至 {{ stock.price_asof }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="market-cap-cell" data-code="{{ stock.stock_code }}">
+                            <div class="market-cap-value">{{ "%.1f"|format(stock.market_cap / 100000000.0) if stock.market_cap else "-" }}</div>
+                            {% if stock.market_cap_asof and stock.market_cap_asof != base_date %}
+                            <div class="text-muted asof-note">截至 {{ stock.market_cap_asof }}</div>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline-primary refresh-btn mt-1" data-code="{{ stock.stock_code }}">更新市值</button>
+                        </td>
+                        <td class="concentration-cell {{ 'top5-high-bg' if stock.concentration_top5 is not none and stock.concentration_top5 > 90 else '' }}" data-code="{{ stock.stock_code }}" style="font-size: 0.76rem; line-height: 1.2;">
+                            <div>Top5: <span class="conc-top5">{{ "%.2f"|format(stock.concentration_top5) if stock.concentration_top5 is not none else "-" }}</span>%</div>
+                            <div>Top10: <span class="conc-top10">{{ "%.2f"|format(stock.concentration_top10) if stock.concentration_top10 is not none else "-" }}</span>%</div>
+                            <div>CCASS: <span class="conc-stake">{{ "%.2f"|format(stock.concentration_stake) if stock.concentration_stake is not none else "-" }}</span>%</div>
+                            {% if stock.concentration_date %}
+                            <div class="text-muted asof-note conc-asof">截至 {{ stock.concentration_date }}</div>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline-success refresh-conc-btn mt-1" data-code="{{ stock.stock_code }}">更新集中度</button>
+                        </td>
+                        <td>
+                            {% for sig, color in stock.signals %}
+                            <span class="badge bg-{{ color }} mb-1" style="font-size: 0.7rem;">{{ sig }}</span>
+                            {% else %}
+                            <span class="text-muted" style="font-size: 0.7rem;">-</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ "%.1f"|format(stock.trend_score) }}</div>
+                            <span class="badge bg-{{ stock.trend_score_color }}" style="font-size: 0.7rem;">{{ stock.trend_score_label }}</span>
+                        </td>
+                        <td class="fw-bold">{{ "%.2f"|format(stock.curr_pct) }}%</td>
+                        
+                        {# 渲染多個時段的變動 #}
+                        {% for p in display_periods %}
+                            {% set val = stock['diff_' ~ p] %}
+                            {% set s_date = stock['s_' ~ p] %}
+                            {% set e_date = stock['e_' ~ p] %}
+                            {% set trend_up_bg = false %}
+                            {% set trend_up_bg_dark = false %}
+                            {% set trend_up_bg_yellow = false %}
+                            {% if p == 'today' %}
+                                {# Yellow bg logic for today: val >= max(15-21d, 22-28d) #}
+                                {% set v_w3 = stock['diff_15_21d'] %}
+                                {% set v_w4 = stock['diff_22_28d'] %}
+                                {% set max_w3_w4 = none %}
+                                {% if v_w3 is not none and v_w4 is not none %}
+                                    {% set max_w3_w4 = (v_w3 if v_w3 > v_w4 else v_w4) %}
+                                {% elif v_w3 is not none %}
+                                    {% set max_w3_w4 = v_w3 %}
+                                {% elif v_w4 is not none %}
+                                    {% set max_w3_w4 = v_w4 %}
+                                {% endif %}
+                                {% if val is not none and max_w3_w4 is not none and val >= max_w3_w4 %}
+                                    {% set trend_up_bg_yellow = true %}
+                                {% endif %}
+                            {% elif p == '1_7d' %}
+                                {% set v_old = stock['diff_8_14d'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg = true %}
+                                {% endif %}
+                                {# Yellow bg logic: 1-7d >= max(15-21d, 22-28d) #}
+                                {% set v_w3 = stock['diff_15_21d'] %}
+                                {% set v_w4 = stock['diff_22_28d'] %}
+                                {% set max_w3_w4 = none %}
+                                {% if v_w3 is not none and v_w4 is not none %}
+                                    {% set max_w3_w4 = (v_w3 if v_w3 > v_w4 else v_w4) %}
+                                {% elif v_w3 is not none %}
+                                    {% set max_w3_w4 = v_w3 %}
+                                {% elif v_w4 is not none %}
+                                    {% set max_w3_w4 = v_w4 %}
+                                {% endif %}
+                                {% if val is not none and max_w3_w4 is not none and val >= max_w3_w4 %}
+                                    {% set trend_up_bg_yellow = true %}
+                                {% endif %}
+                            {% elif p == '8_14d' %}
+                                {% set v_new = stock['diff_1_7d'] %}
+                                {% set v_old = stock['diff_15_21d'] %}
+                                {% if (val is not none and v_new is not none and v_new > val) or (val is not none and v_old is not none and val > v_old) %}
+                                    {% set trend_up_bg = true %}
+                                {% endif %}
+                            {% elif p == '15_21d' %}
+                                {% set v_new = stock['diff_8_14d'] %}
+                                {% set v_old = stock['diff_22_28d'] %}
+                                {% if (val is not none and v_new is not none and v_new > val) or (val is not none and v_old is not none and val > v_old) %}
+                                    {% set trend_up_bg = true %}
+                                {% endif %}
+                            {% elif p == '22_28d' %}
+                                {% set v_new = stock['diff_15_21d'] %}
+                                {% if val is not none and v_new is not none and v_new > val %}
+                                    {% set trend_up_bg = true %}
+                                {% endif %}
+                            {% elif p == 'M1' %}
+                                {% set v_old = stock['diff_M2'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                                {# M1 >= (M4 or M5) max value check #}
+                                {% set v_m4 = stock['diff_M4'] %}
+                                {% set v_m5 = stock['diff_M5'] %}
+                                {% set max_m4_m5 = none %}
+                                {% if v_m4 is not none and v_m5 is not none %}
+                                    {% set max_m4_m5 = (v_m4 if v_m4 > v_m5 else v_m5) %}
+                                {% elif v_m4 is not none %}
+                                    {% set max_m4_m5 = v_m4 %}
+                                {% elif v_m5 is not none %}
+                                    {% set max_m4_m5 = v_m5 %}
+                                {% endif %}
+                                {% if val is not none and max_m4_m5 is not none and val >= max_m4_m5 %}
+                                    {% set trend_up_bg_yellow = true %}
+                                {% endif %}
+                            {% elif p == 'M2' %}
+                                {% set v_old = stock['diff_M3'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% elif p == 'M3' %}
+                                {% set v_old = stock['diff_M4'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% elif p == 'M4' %}
+                                {% set v_old = stock['diff_M5'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% elif p == 'M5' %}
+                                {# M5 is the last one in this sequence, keep simple #}
+                                {% if val is not none and val > 0 %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% elif p == '1m' %}
+                                {% set v_old = stock['diff_3m'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% elif p == '3m' %}
+                                {% set v_old = stock['diff_6m'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% elif p == '6m' %}
+                                {% set v_old = stock['diff_12m'] %}
+                                {% if val is not none and v_old is not none and val > v_old %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% elif p == '12m' %}
+                                {% if val is not none and val > 0 %}
+                                    {% set trend_up_bg_dark = true %}
+                                {% endif %}
+                            {% endif %}
+                            <td class="{{ 'positive' if val and val > 0 else ('negative' if val and val < 0 else '') }} {{ 'trend-up-bg' if trend_up_bg else '' }} {{ 'trend-up-bg-dark' if trend_up_bg_dark else '' }} {{ 'trend-up-bg-yellow' if trend_up_bg_yellow else '' }}" style="font-size: 0.85rem;{% if p == 'M1' or p == '1m' %} border-left: 2px solid #adb5bd;{% endif %}">
+                                <div>{{ ("+" if val > 0 else "") ~ "%.3f"|format(val) ~ "%" if val is not none else "-" }}</div>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        async function refreshMarketCap(stockCode, btn) {
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '更新中...';
+
+            try {
+                const resp = await fetch('/api/refresh_market_cap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_code: stockCode })
+                });
+                const rawText = await resp.text();
+                let data = null;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (e) {
+                    data = { ok: false, error: `HTTP ${resp.status} 非 JSON 回應` };
+                }
+
+                if (!resp.ok || !data.ok) {
+                    throw new Error(data.error || '更新失敗');
+                }
+
+                const priceCell = document.querySelector('.price-cell[data-code="' + stockCode + '"]');
+                const capCell = document.querySelector('.market-cap-cell[data-code="' + stockCode + '"]');
+                const capValue = capCell ? capCell.querySelector('.market-cap-value') : null;
+                const priceValue = priceCell ? priceCell.querySelector('.detail-price') : null;
+                const price52w = priceCell ? priceCell.querySelector('.detail-52w') : null;
+                const turnoverValue = priceCell ? priceCell.querySelector('.detail-turnover') : null;
+                const vr5Value = priceCell ? priceCell.querySelector('.detail-vr5') : null;
+                const vr20Value = priceCell ? priceCell.querySelector('.detail-vr20') : null;
+                const sectorValue = priceCell ? priceCell.querySelector('.detail-sector') : null;
+                const industryValue = priceCell ? priceCell.querySelector('.detail-industry') : null;
+
+                if (priceValue && data.price !== null && data.price !== undefined) {
+                    priceValue.textContent = Number(data.price).toFixed(2);
+                }
+                if (capValue && data.market_cap) {
+                    capValue.textContent = (Number(data.market_cap) / 100000000).toFixed(1);
+                }
+                if (price52w) {
+                    const hi = (data.fifty_two_week_high !== null && data.fifty_two_week_high !== undefined)
+                        ? Number(data.fifty_two_week_high).toFixed(2)
+                        : '-';
+                    const lo = (data.fifty_two_week_low !== null && data.fifty_two_week_low !== undefined)
+                        ? Number(data.fifty_two_week_low).toFixed(2)
+                        : '-';
+                    price52w.textContent = `52W: ${hi} / ${lo}`;
+                }
+                if (turnoverValue) {
+                    const turnover = (data.turnover_rate_float !== null && data.turnover_rate_float !== undefined)
+                        ? (Number(data.turnover_rate_float) * 100).toFixed(2) + '%'
+                        : '-';
+                    turnoverValue.textContent = `換手率: ${turnover}`;
+                }
+                if (vr5Value) {
+                    const vr5 = (data.volume_ratio_5d !== null && data.volume_ratio_5d !== undefined)
+                        ? Number(data.volume_ratio_5d).toFixed(2)
+                        : '-';
+                    vr5Value.textContent = `量比(5日): ${vr5}`;
+                }
+                if (vr20Value) {
+                    const vr20 = (data.volume_ratio_20d !== null && data.volume_ratio_20d !== undefined)
+                        ? Number(data.volume_ratio_20d).toFixed(2)
+                        : '-';
+                    vr20Value.textContent = `量比(20日): ${vr20}`;
+                }
+                if (priceCell) {
+                    const isHot = (data.volume_ratio_5d !== null && data.volume_ratio_5d !== undefined && Number(data.volume_ratio_5d) >= 1.3)
+                        || (data.turnover_rate_float !== null && data.turnover_rate_float !== undefined && Number(data.turnover_rate_float) >= 0.03);
+                    priceCell.classList.toggle('detail-hot-bg', isHot);
+                }
+                if (sectorValue) {
+                    sectorValue.textContent = data.sector || '-';
+                }
+                if (industryValue) {
+                    industryValue.textContent = data.industry || '-';
+                }
+
+                btn.textContent = '已更新';
+                setTimeout(() => {
+                    btn.textContent = oldText;
+                    btn.disabled = false;
+                }, 1200);
+            } catch (err) {
+                alert('更新 ' + stockCode + ' 失敗: ' + err.message);
+                btn.textContent = oldText;
+                btn.disabled = false;
+            }
+        }
+
+        async function toggleBookmark(btn) {
+            const stockCode = btn.getAttribute('data-code');
+            try {
+                const resp = await fetch('/api/toggle_bookmark', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_code: stockCode })
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    if (data.status === 'marked') {
+                        btn.textContent = '已收';
+                        btn.classList.remove('btn-outline-secondary');
+                        btn.classList.add('btn-warning');
+                    } else {
+                        btn.textContent = '收藏';
+                        btn.classList.remove('btn-warning');
+                        btn.classList.add('btn-outline-secondary');
+                    }
+                }
+            } catch (err) {
+                console.error('Bookmark toggle failed', err);
+            }
+        }
+
+        async function refreshListingDate(stockCode, btn) {
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '更新中...';
+
+            try {
+                const resp = await fetch('/api/refresh_listing_date', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_code: stockCode })
+                });
+                const rawText = await resp.text();
+                let data = null;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (e) {
+                    data = { ok: false, error: `HTTP ${resp.status} 非 JSON 回應` };
+                }
+
+                if (!resp.ok || !data.ok) {
+                    throw new Error(data.error || '更新失敗');
+                }
+
+                const row = btn.closest('tr');
+                const listingCell = document.querySelector('.listing-date-cell[data-code="' + stockCode + '"]');
+                const listingValue = listingCell ? listingCell.querySelector('.listing-date-value') : null;
+
+                if (listingValue && data.listing_date) {
+                    listingValue.textContent = data.listing_date;
+                }
+                if (row && data.listing_date) {
+                    row.dataset.listing = data.listing_date;
+                }
+
+                btn.textContent = '已更新';
+                setTimeout(() => {
+                    btn.textContent = oldText;
+                    btn.disabled = false;
+                }, 1200);
+            } catch (err) {
+                alert('更新上市日 ' + stockCode + ' 失敗: ' + err.message);
+                btn.textContent = oldText;
+                btn.disabled = false;
+            }
+        }
+
+        async function refreshConcentration(stockCode, btn) {
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '更新中...';
+
+            try {
+                const resp = await fetch('/api/refresh_concentration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_code: stockCode })
+                });
+                const rawText = await resp.text();
+                let data = null;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (e) {
+                    data = { ok: false, error: `HTTP ${resp.status} 非 JSON 回應` };
+                }
+
+                if (!resp.ok || !data.ok) {
+                    throw new Error(data.error || '更新失敗');
+                }
+
+                const cell = document.querySelector('.concentration-cell[data-code="' + stockCode + '"]');
+                if (cell) {
+                    const top5El = cell.querySelector('.conc-top5');
+                    const top10El = cell.querySelector('.conc-top10');
+                    const stakeEl = cell.querySelector('.conc-stake');
+                    const asofEl = cell.querySelector('.conc-asof');
+
+                    if (top5El) top5El.textContent = data.concentration_top5 != null ? Number(data.concentration_top5).toFixed(2) : '-';
+                    if (top10El) top10El.textContent = data.concentration_top10 != null ? Number(data.concentration_top10).toFixed(2) : '-';
+                    if (stakeEl) stakeEl.textContent = data.concentration_stake != null ? Number(data.concentration_stake).toFixed(2) : '-';
+                    if (data.concentration_date) {
+                        if (asofEl) {
+                            asofEl.textContent = '截至 ' + data.concentration_date;
+                        } else {
+                            const newAsof = document.createElement('div');
+                            newAsof.className = 'text-muted asof-note conc-asof';
+                            newAsof.textContent = '截至 ' + data.concentration_date;
+                            const btnNode = cell.querySelector('.refresh-conc-btn');
+                            cell.insertBefore(newAsof, btnNode);
+                        }
+                    }
+                }
+
+                btn.textContent = '已更新';
+                setTimeout(() => {
+                    btn.textContent = oldText;
+                    btn.disabled = false;
+                }, 1200);
+            } catch (err) {
+                alert('更新集中度 ' + stockCode + ' 失敗: ' + err.message);
+                btn.textContent = oldText;
+                btn.disabled = false;
+            }
+        }
+
+        document.querySelectorAll('.refresh-btn').forEach((btn) => {
+            btn.addEventListener('click', () => refreshMarketCap(btn.dataset.code, btn));
+        });
+
+        document.querySelectorAll('.refresh-listing-btn').forEach((btn) => {
+            btn.addEventListener('click', () => refreshListingDate(btn.dataset.code, btn));
+        });
+
+        document.querySelectorAll('.refresh-conc-btn').forEach((btn) => {
+            btn.addEventListener('click', () => refreshConcentration(btn.dataset.code, btn));
+        });
+
+        // ── 次新股篩選 ──────────────────────────────────────────
+        const listingFilterAllBtn = document.getElementById('listing-filter-all-btn');
+        const listingFilterRecentBtn = document.getElementById('listing-filter-recent-btn');
+        const listingMonthsInput = document.getElementById('listing-months-input');
+        const listingFilterActive = '{{ 1 if recent_listing_months is not none else 0 }}' === '1';
+
+        function updateRecentListingUrl(months) {
+            const url = new URL(window.location.href);
+            if (months && months > 0) {
+                url.searchParams.set('recent_listing_months', String(months));
+            } else {
+                url.searchParams.delete('recent_listing_months');
+            }
+            window.location.href = url.toString();
+        }
+
+        if (listingFilterAllBtn) {
+            listingFilterAllBtn.addEventListener('click', () => {
+                if (listingFilterActive) {
+                    updateRecentListingUrl(null);
+                }
+            });
+        }
+
+        if (listingFilterRecentBtn) {
+            listingFilterRecentBtn.addEventListener('click', () => {
+                const months = parseInt(listingMonthsInput.value, 10) || 24;
+                updateRecentListingUrl(months);
+            });
+        }
+
+        if (listingMonthsInput) {
+            listingMonthsInput.addEventListener('change', () => {
+                if (listingFilterActive) {
+                    const months = parseInt(listingMonthsInput.value, 10) || 24;
+                    updateRecentListingUrl(months);
+                }
+            });
+        }
+
+        // ── 批量更新上市日 ───────────────────────────────────────
+        const listingRefreshBtn = document.getElementById('listing-refresh-btn');
+        const concentrationRefreshBtn = document.getElementById('concentration-refresh-btn');
+        const concentrationForceRefreshBtn = document.getElementById('concentration-refresh-force-btn');
+        const listingLimitInput = document.getElementById('listing-limit-input');
+        if (listingRefreshBtn) {
+            listingRefreshBtn.addEventListener('click', async () => {
+                const limitValue = Number(listingLimitInput && listingLimitInput.value ? listingLimitInput.value : 20);
+                if (!Number.isInteger(limitValue) || limitValue <= 0) { alert('上限數量請輸入正整數'); return; }
+                const oldText = listingRefreshBtn.textContent;
+                listingRefreshBtn.disabled = true;
+                if (listingLimitInput) listingLimitInput.disabled = true;
+                listingRefreshBtn.textContent = '更新中... (每隻 1 秒)';
+                try {
+                    const resp = await fetch('/api/refresh_listing_dates', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            only_missing: true,
+                            limit: limitValue,
+                            recent_listing_months: listingFilterActive ? (parseInt(listingMonthsInput.value, 10) || 24) : null,
+                            base_date: '{{ base_date }}'
+                        })
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok || !data.ok) throw new Error(data.error || '更新失敗');
+                    alert(`更新上市日完成: 成功 ${data.success} / 失敗 ${data.failed} / 總數 ${data.total}${data.recent_listing_months ? ' / 次新股優先 ' + data.recent_listing_months + ' 個月' : ''}`);
+                    window.location.reload();
+                } catch (err) {
+                    alert('更新上市日失敗: ' + err.message);
+                    listingRefreshBtn.textContent = oldText;
+                    listingRefreshBtn.disabled = false;
+                    if (listingLimitInput) listingLimitInput.disabled = false;
+                }
+            });
+        }
+
+        async function refreshConcentrations(btn, onlyMissing) {
+            const limitValue = Number(listingLimitInput && listingLimitInput.value ? listingLimitInput.value : 20);
+            if (!Number.isInteger(limitValue) || limitValue <= 0) { alert('上限數量請輸入正整數'); return; }
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            if (listingLimitInput) listingLimitInput.disabled = true;
+            btn.textContent = onlyMissing
+                ? (listingFilterActive ? '更新次新股集中度中... (每隻 1 秒)' : '更新集中度中... (每隻 1 秒)')
+                : (listingFilterActive ? '強制更新次新股集中度中... (每隻 1 秒)' : '強制更新集中度中... (每隻 1 秒)');
+            try {
+                const resp = await fetch('/api/refresh_concentrations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        only_missing: onlyMissing,
+                        limit: limitValue,
+                        recent_listing_months: listingFilterActive ? (parseInt(listingMonthsInput.value, 10) || 24) : null,
+                        base_date: '{{ base_date }}'
+                    })
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.ok) throw new Error(data.error || '更新失敗');
+                alert(`${onlyMissing ? '批量更新集中度' : '強制批量更新集中度'}完成: 成功 ${data.success} / 失敗 ${data.failed} / 總數 ${data.total}${data.recent_listing_months ? ' / 次新股優先 ' + data.recent_listing_months + ' 個月' : ''}`);
+                window.location.reload();
+            } catch (err) {
+                alert(`${onlyMissing ? '批量更新集中度' : '強制批量更新集中度'}失敗: ` + err.message);
+                btn.textContent = oldText;
+                btn.disabled = false;
+                if (listingLimitInput) listingLimitInput.disabled = false;
+            }
+        }
+
+        if (concentrationRefreshBtn) {
+            concentrationRefreshBtn.addEventListener('click', async () => {
+                await refreshConcentrations(concentrationRefreshBtn, true);
+            });
+        }
+
+        if (concentrationForceRefreshBtn) {
+            concentrationForceRefreshBtn.addEventListener('click', async () => {
+                await refreshConcentrations(concentrationForceRefreshBtn, false);
+            });
+        }
+
+
+        const bulkBtn = document.getElementById('bulk-refresh-btn');
+        const forceBulkBtn = document.getElementById('bulk-refresh-force-btn');
+        if (bulkBtn) {
+            bulkBtn.addEventListener('click', async () => {
+                const limitInput = document.getElementById('bulk-limit-input');
+                const limitValue = Number(limitInput && limitInput.value ? limitInput.value : 20);
+                if (!Number.isInteger(limitValue) || limitValue <= 0) {
+                    alert('上限數量請輸入正整數');
+                    return;
+                }
+
+                const oldText = bulkBtn.textContent;
+                bulkBtn.disabled = true;
+                if (limitInput) {
+                    limitInput.disabled = true;
+                }
+                bulkBtn.textContent = '批量更新中... (每隻 1 秒)';
+                try {
+                    const resp = await fetch('/api/refresh_market_cap_bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            only_missing: true,
+                            limit: limitValue,
+                            recent_listing_months: listingFilterActive ? (parseInt(listingMonthsInput.value, 10) || 24) : null,
+                            base_date: '{{ base_date }}'
+                        })
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok || !data.ok) {
+                        throw new Error(data.error || '批量更新失敗');
+                    }
+                    alert('批量更新完成: 成功 ' + data.success + ' / 失敗 ' + data.failed + ' / 總數 ' + data.total + ' (上限 ' + data.limit + ')' + (data.recent_listing_months ? ' / 次新股優先 ' + data.recent_listing_months + ' 個月' : ''));
+                    window.location.reload();
+                } catch (err) {
+                    alert('批量更新失敗: ' + err.message);
+                    bulkBtn.textContent = oldText;
+                    bulkBtn.disabled = false;
+                    if (limitInput) {
+                        limitInput.disabled = false;
+                    }
+                }
+            });
+        }
+
+        if (forceBulkBtn) {
+            forceBulkBtn.addEventListener('click', async () => {
+                const limitInput = document.getElementById('bulk-limit-input');
+                const limitValue = Number(limitInput && limitInput.value ? limitInput.value : 20);
+                if (!Number.isInteger(limitValue) || limitValue <= 0) {
+                    alert('上限數量請輸入正整數');
+                    return;
+                }
+
+                const oldText = forceBulkBtn.textContent;
+                forceBulkBtn.disabled = true;
+                if (limitInput) {
+                    limitInput.disabled = true;
+                }
+                forceBulkBtn.textContent = '強制更新中... (每隻 1 秒)';
+                try {
+                    const resp = await fetch('/api/refresh_market_cap_bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            only_missing: false,
+                            limit: limitValue,
+                            recent_listing_months: listingFilterActive ? (parseInt(listingMonthsInput.value, 10) || 24) : null,
+                            base_date: '{{ base_date }}'
+                        })
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok || !data.ok) {
+                        throw new Error(data.error || '強制批量更新失敗');
+                    }
+                    alert('強制批量更新完成: 成功 ' + data.success + ' / 失敗 ' + data.failed + ' / 總數 ' + data.total + ' (上限 ' + data.limit + ')' + (data.recent_listing_months ? ' / 次新股優先 ' + data.recent_listing_months + ' 個月' : ''));
+                    window.location.reload();
+                } catch (err) {
+                    alert('強制批量更新失敗: ' + err.message);
+                    forceBulkBtn.textContent = oldText;
+                    forceBulkBtn.disabled = false;
+                    if (limitInput) {
+                        limitInput.disabled = false;
+                    }
+                }
+            });
+        }
+
+        // ── 顯示切換 ──────────────────────────────────────────
+        const toggleHighlightBtn = document.getElementById('toggle-highlight-btn');
+        let onlyShowHighlighted = false;
+
+        if (toggleHighlightBtn) {
+            toggleHighlightBtn.addEventListener('click', () => {
+                onlyShowHighlighted = !onlyShowHighlighted;
+                const rows = document.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    if (onlyShowHighlighted) {
+                        if (row.classList.contains('row-highlight')) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    } else {
+                        row.style.display = '';
+                    }
+                });
+                toggleHighlightBtn.textContent = onlyShowHighlighted ? '顯示全部行' : '只看高亮行';
+                // 也可以切換按鈕樣式
+                toggleHighlightBtn.classList.toggle('btn-outline-warning', !onlyShowHighlighted);
+                toggleHighlightBtn.classList.toggle('btn-warning', onlyShowHighlighted);
+            });
+        }
+
+        const syncHkexBtn = document.getElementById('sync-hkex-btn');
+        if (syncHkexBtn) {
+            syncHkexBtn.addEventListener('click', async () => {
+                const oldText = syncHkexBtn.textContent;
+                syncHkexBtn.disabled = true;
+                syncHkexBtn.textContent = '同步中 (約 10 秒)...';
+                try {
+                    const resp = await fetch('/api/sync_hkex', { method: 'POST' });
+                    const data = await resp.json();
+                    if (!resp.ok || !data.ok) throw new Error(data.error || '同步失敗');
+                    
+                    const summary = data.results.map(r => `${r.date}: ${r.success ? '✓' : '✗'}`).join('\n');
+                    alert('同步完成！\n' + summary);
+                    window.location.reload();
+                } catch (err) {
+                    alert('同步出錯: ' + err.message);
+                    syncHkexBtn.textContent = oldText;
+                    syncHkexBtn.disabled = false;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
