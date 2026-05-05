@@ -1,5 +1,5 @@
-run = "pip install -q -r requirements.txt && python3 app_lite.py"
-entrypoint = "app_lite.py"
+run = "pip install -q -r requirements.txt && python3 app_minimal.py"
+entrypoint = "app_minimal.py"
 
 [env]
 PYTHONUNBUFFERED = "1"
