@@ -30,18 +30,119 @@
             h4 { font-size: 1.1rem; margin-bottom: 1rem !important; }
             
             /* 工具欄改進 */
-            .d-flex.flex-column { gap: 8px; }
-            .input-group, .btn-group { margin-bottom: 6px !important; }
+            .d-flex.flex-column { gap: 6px; }
+            .input-group, .btn-group { margin-bottom: 4px !important; }
             .input-group { font-size: 0.85rem; }
             .input-group-text { padding: 0.35rem 0.5rem; font-size: 0.8rem; }
             .form-control, .form-select { padding: 0.4rem 0.5rem; font-size: 0.9rem; }
             .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
             
-            /* 搜索表單改進 */
-            .input-group { flex-wrap: wrap; width: 100% !important; }
-            input[type="text"].form-control { flex: 1 1 100%; min-width: 100px; }
-            select.form-select { flex: 1 1 auto; min-width: 80px; }
-            .input-group button { flex: 0 0 auto; }
+            /* 搜索表單 - 代碼或名稱 + 搜尋 在同一行 */
+            form.w-100 > .input-group { 
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 4px;
+                margin-bottom: 4px !important;
+            }
+            form.w-100 > .input-group input[type="text"] { 
+                flex: 1 1 auto;
+                min-width: 80px;
+            }
+            form.w-100 > .input-group button { 
+                flex: 0 0 auto;
+            }
+            
+            /* 板塊選擇區 - 所有板塊 + 細分板塊 在同一行 */
+            .row.g-2.mb-2.mt-2 > .col-12 {
+                flex: 1 1 calc(50% - 0.25rem);
+                min-width: 130px;
+            }
+            .row.g-2.mb-2.mt-2 > .col-12.col-sm-6:first-child {
+                flex: 1 1 calc(50% - 0.25rem);
+            }
+            .row.g-2.mb-2.mt-2 > .col-12.col-sm-6:nth-child(2) {
+                flex: 1 1 calc(50% - 0.25rem);
+            }
+            
+            /* 日期選擇和回放 - date picker + 回放 + 最新 在同一行 */
+            form.d-flex.flex-wrap {
+                gap: 4px !important;
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                align-items: center !important;
+                margin-bottom: 4px !important;
+            }
+            form.d-flex.flex-wrap > .input-group {
+                flex: 1 1 auto !important;
+                min-width: 100px !important;
+            }
+            form.d-flex.flex-wrap > button,
+            form.d-flex.flex-wrap > a {
+                flex: 0 0 auto !important;
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.75rem !important;
+                white-space: nowrap;
+            }
+            
+            /* 按鈕控制區改進 */
+            .row.g-1 {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 4px !important;
+                align-items: center;
+            }
+            
+            /* 全部/次新股 按鈕組 */
+            .row.g-1 > .col-12.col-sm-auto:nth-child(1) {
+                flex: 1 1 auto;
+                min-width: 140px;
+            }
+            .row.g-1 > .col-12.col-sm-auto:nth-child(1) .btn-group {
+                display: flex !important;
+                width: 100% !important;
+            }
+            .row.g-1 > .col-12.col-sm-auto:nth-child(1) .btn {
+                flex: 1 1 auto !important;
+                padding: 0.25rem 0.3rem !important;
+                font-size: 0.7rem !important;
+            }
+            
+            /* 高亮/書籤/同步 - col-4使其三个并排 */
+            .row.g-1 > .col-4 {
+                flex: 1 1 calc(33.333% - 2.67px) !important;
+                min-width: 0 !important;
+            }
+            .row.g-1 > .col-4.col-sm-auto {
+                flex: 1 1 calc(33.333% - 2.67px) !important;
+            }
+            .row.g-1 > .col-4 .btn,
+            .row.g-1 > .col-4 a {
+                width: 100% !important;
+                padding: 0.25rem 0.25rem !important;
+                font-size: 0.7rem !important;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            /* 次新月數輸入 */
+            .row.g-1 > .col-12.col-sm-auto:last-child {
+                flex: 1 1 auto;
+                min-width: 120px;
+            }
+            .row.g-1 > .col-12.col-sm-auto:last-child .input-group {
+                display: flex !important;
+                width: 100% !important;
+            }
+            .row.g-1 > .col-12.col-sm-auto:last-child .input-group-text {
+                padding: 0.25rem 0.3rem !important;
+                font-size: 0.65rem !important;
+            }
+            .row.g-1 > .col-12.col-sm-auto:last-child input {
+                flex: 1 1 auto !important;
+                padding: 0.25rem 0.3rem !important;
+                font-size: 0.75rem !important;
+            }
             
             /* 表格改進 - 允許水平滾動 */
             .table th, .table td { 
@@ -147,12 +248,14 @@
                         {% if recent_listing_months is not none %}
                         <input type="hidden" name="recent_listing_months" value="{{ recent_listing_months }}">
                         {% endif %}
+                        <!-- 代碼或名稱 + 搜尋 在同一行 -->
                         <div class="input-group mb-2 mb-md-0 me-md-2">
                             <input type="text" name="search" class="form-control form-control-sm" placeholder="代碼或名稱..." value="{{ search }}">
                             <button class="btn btn-outline-primary btn-sm" type="submit">搜尋</button>
                         </div>
+                        <!-- 所有板塊 + 細分板塊 在同一行 -->
                         <div class="row g-2 mb-2 mt-2 mt-md-0">
-                            <div class="col-12 col-sm-6 col-md-3">
+                            <div class="col-12 col-sm-6">
                                 <select name="sector" class="form-select form-select-sm">
                                     <option value="">所有板塊</option>
                                     {% for eng, zh in sector_map.items() %}
@@ -160,7 +263,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-12 col-sm-6 col-md-3">
+                            <div class="col-12 col-sm-6">
                                 <select name="industry" class="form-select form-select-sm">
                                     <option value="">所有細分板塊</option>
                                     {% for eng, zh in industry_map.items() %}
@@ -208,7 +311,8 @@
                         {% if recent_listing_months is not none %}
                         <input type="hidden" name="recent_listing_months" value="{{ recent_listing_months }}">
                         {% endif %}
-                        <div class="input-group input-group-sm flex-grow-1" style="min-width: 140px;">
+                        <!-- date picker + 回放 + 最新 在同一行 -->
+                        <div class="input-group input-group-sm flex-grow-1" style="min-width: 100px;">
                             <span class="input-group-text d-none d-md-inline">基準日</span>
                             <input type="date" name="base_date" class="form-control form-control-sm" min="{{ earliest_date }}" max="{{ latest_date }}" value="{{ base_date }}">
                         </div>
@@ -220,25 +324,28 @@
                 <!-- 按鈕控制區 -->
                 <div class="w-100 mb-2">
                     <div class="row g-1">
-                        <div class="col-6 col-sm-4 col-md-auto">
+                        <!-- 全部 + 次新股 在同一行 -->
+                        <div class="col-12 col-sm-auto">
                             <div class="btn-group btn-group-sm w-100" role="group">
                                 <button id="listing-filter-all-btn" type="button" class="btn {{ 'btn-secondary text-white' if recent_listing_months is none else 'btn-outline-secondary' }} flex-grow-1">全部</button>
                                 <button id="listing-filter-recent-btn" type="button" class="btn {{ 'btn-info text-white' if recent_listing_months is not none else 'btn-outline-info' }} flex-grow-1">次新股</button>
                             </div>
                         </div>
-                        <div class="col-6 col-sm-4 col-md-auto">
+                        <!-- 高亮 + 書籤 + 同步 在同一行 -->
+                        <div class="col-4 col-sm-auto">
                             <button id="toggle-highlight-btn" type="button" class="btn btn-sm btn-outline-warning w-100">高亮行</button>
                         </div>
-                        <div class="col-6 col-sm-4 col-md-auto">
+                        <div class="col-4 col-sm-auto">
                             <a href="/?bookmarks_only={{ '0' if show_bookmarks_only else '1' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if current_sector %}&sector={{ current_sector|urlencode }}{% endif %}{% if current_industry %}&industry={{ current_industry|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" 
                                class="btn btn-sm {{ 'btn-warning' if show_bookmarks_only else 'btn-outline-warning' }} w-100">
                                 {{ '全部' if show_bookmarks_only else '書籤' }}
                             </a>
                         </div>
-                        <div class="col-6 col-sm-4 col-md-auto">
+                        <div class="col-4 col-sm-auto">
                             <button id="sync-hkex-btn" type="button" class="btn btn-sm btn-primary w-100" title="同步最近 5 天港交所持股數據">同步</button>
                         </div>
-                        <div class="col-12 col-sm-4">
+                        <!-- 次新月數輸入 -->
+                        <div class="col-12 col-sm-auto">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text">次新月數</span>
                                 <input id="listing-months-input" type="number" class="form-control" min="1" step="1" value="{{ recent_listing_months if recent_listing_months is not none else 24 }}">
@@ -257,10 +364,10 @@
                             </div>
                         </div>
                         <div class="col-6 col-md-auto">
-                            <button id="bulk-refresh-btn" class="btn btn-sm btn-outline-danger w-100">批量更新</button>
+                            <button id="bulk-refresh-btn" class="btn btn-sm btn-outline-danger w-100">批量更新股票資料</button>
                         </div>
                         <div class="col-6 col-md-auto">
-                            <button id="bulk-refresh-force-btn" class="btn btn-sm btn-outline-warning w-100">強制更新</button>
+                            <button id="bulk-refresh-force-btn" class="btn btn-sm btn-outline-warning w-100">強制更新股票資料</button>
                         </div>
                         <div class="col-6 col-md-auto">
                             <div class="input-group input-group-sm">
