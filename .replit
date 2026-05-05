@@ -1,4 +1,4 @@
-run = "python app_test.py"
+run = "python3 app_test.py"
 entrypoint = "app_test.py"
 
 [env]
@@ -7,3 +7,7 @@ FLASK_ENV = "production"
 
 [nix]
 channel = "stable-22_11"
+packages = [
+    "python311"
+    "python311Packages.pip"
+]
