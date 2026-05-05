@@ -39,5 +39,6 @@ def serve_dashboard():
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     host = os.getenv('HOST', '0.0.0.0')
-    print(f"Starting on {host}:{port}", file=sys.stderr, flush=True)
-    app.run(debug=False, host=host, port=port, use_reloader=False)
+    print(f"Starting app_minimal on {host}:{port}", file=sys.stderr, flush=True)
+    print(f"Flask app object: {app}", file=sys.stderr, flush=True)
+    app.run(debug=False, host=host, port=port, use_reloader=False, threaded=True)

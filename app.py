@@ -21,6 +21,21 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.getenv('DB_PATH', os.path.join(BASE_DIR, 'hkex_southbound.db'))
 
+# 全局错误处理 - 防止 Replit 上的超时返回 502
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle any unhandled exceptions gracefully"""
+    import traceback
+    error_msg = str(e)[:150]
+    app.logger.error(f"Unhandled exception: {traceback.format_exc()}")
+    return f"""
+    <html><body style="font-family:Arial; padding:50px;">
+    <h1>⚠️ 頁面加載中...</h1>
+    <p>應用正在初始化數據，請稍候或<a href="/">重新刷新</a></p>
+    <p style="color:#999; font-size:12px;">Status: {error_msg[:80]}</p>
+    </body></html>
+    """, 202
+
 # 英文行業自動轉中文；無對應時保留英文
 SECTOR_ZH_MAP = {
     'Technology': '科技',
