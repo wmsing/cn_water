@@ -1,5 +1,5 @@
-run = "python app.py"
-entrypoint = "app.py"
+run = "python app_test.py"
+entrypoint = "app_test.py"
 
 [env]
 PYTHONUNBUFFERED = "1"
