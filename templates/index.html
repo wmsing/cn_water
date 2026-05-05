@@ -23,44 +23,173 @@
         .row-highlight td { border-top: 3px solid #ffff00 !important; border-bottom: 3px solid #ffff00 !important; }
         .row-highlight td:first-child { border-left: 3px solid #ffff00 !important; }
         .row-highlight td:last-child { border-right: 3px solid #ffff00 !important; }
+
+        /* ========== 手機響應式設計 ========== */
+        @media (max-width: 576px) {
+            body { padding: 10px; }
+            h4 { font-size: 1.1rem; margin-bottom: 1rem !important; }
+            
+            /* 工具欄改進 */
+            .d-flex.flex-column { gap: 8px; }
+            .input-group, .btn-group { margin-bottom: 6px !important; }
+            .input-group { font-size: 0.85rem; }
+            .input-group-text { padding: 0.35rem 0.5rem; font-size: 0.8rem; }
+            .form-control, .form-select { padding: 0.4rem 0.5rem; font-size: 0.9rem; }
+            .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+            
+            /* 搜索表單改進 */
+            .input-group { flex-wrap: wrap; width: 100% !important; }
+            input[type="text"].form-control { flex: 1 1 100%; min-width: 100px; }
+            select.form-select { flex: 1 1 auto; min-width: 80px; }
+            .input-group button { flex: 0 0 auto; }
+            
+            /* 表格改進 */
+            .table th, .table td { 
+                white-space: normal; 
+                padding: 0.3rem 0.25rem; 
+                font-size: 0.75rem;
+            }
+            .table { font-size: 0.8rem; }
+            
+            /* 隐藏非关键列 */
+            .hide-on-mobile { display: none !important; }
+            th[style*="width: 40px"], 
+            .concentration-cell,
+            .detail-hot-bg .detail-52w,
+            .detail-hot-bg .detail-industry {
+                display: none !important;
+            }
+            
+            /* 簡化表格顯示 */
+            .table-scroll-wrapper { 
+                max-height: calc(100vh - 120px);
+                border-radius: 0.25rem;
+            }
+            .bookmark-btn { 
+                padding: 2px 4px !important; 
+                font-size: 0.65rem !important; 
+                min-width: 35px !important;
+            }
+            
+            /* 名稱欄改進 */
+            td.text-start { 
+                word-break: break-word; 
+                white-space: normal;
+            }
+            
+            /* 按鈕欄改進 */
+            .btn-group-sm, .btn-group { 
+                display: flex; 
+                flex-wrap: wrap; 
+                gap: 4px;
+                width: 100%;
+            }
+            .btn-group-sm .btn, .btn-group .btn { 
+                flex: 0 1 auto;
+                padding: 0.25rem 0.4rem;
+                font-size: 0.7rem;
+            }
+            
+            /* 信息提示簡化 */
+            .text-muted.small { 
+                font-size: 0.7rem !important;
+                line-height: 1.3;
+            }
+            .text-muted.mt-1 { margin-top: 0 !important; }
+            
+            /* 刷新按鈕簡化 */
+            .refresh-btn, .refresh-listing-btn, .refresh-conc-btn { 
+                font-size: 0.65rem !important;
+                padding: 2px 4px !important;
+                margin-top: 3px !important;
+            }
+        }
+
+        @media (max-width: 768px) and (min-width: 577px) {
+            body { padding: 15px; }
+            .table th, .table td { 
+                padding: 0.4rem 0.3rem;
+                font-size: 0.85rem;
+            }
+            .asof-note { font-size: 0.6rem; }
+            
+            /* 隐藏次要列 */
+            .concentration-cell { display: none !important; }
+            .detail-hot-bg .detail-52w { display: none !important; }
+        }
+
+        @media (max-width: 992px) {
+            .btn-group { 
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .input-group { 
+                display: flex;
+                flex-wrap: wrap;
+            }
+        }
+
+        /* ========== 平板和更大屏幕 ========== */
+        @media (min-width: 769px) {
+            .hide-on-mobile { display: table-cell !important; }
+        }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <h4 class="mb-2">港股通持股變動</h4>
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex flex-column align-items-start">
-                <div class="d-flex align-items-center flex-wrap">
-                    <form action="/" method="get" class="me-3 mb-2 mb-md-0">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div class="d-flex flex-column align-items-start w-100">
+                <!-- 搜尋表單 -->
+                <div class="w-100 mb-3">
+                    <form action="/" method="get" class="w-100">
                         <input type="hidden" name="sort" value="{{ sort_by }}">
                         <input type="hidden" name="order" value="{{ order }}">
                         <input type="hidden" name="base_date" value="{{ base_date }}">
                         {% if recent_listing_months is not none %}
                         <input type="hidden" name="recent_listing_months" value="{{ recent_listing_months }}">
                         {% endif %}
-                        <div class="input-group">
+                        <div class="input-group mb-2">
                             <input type="text" name="search" class="form-control" placeholder="代碼或名稱..." value="{{ search }}">
-                            <select name="sector" class="form-select" style="max-width: 130px;">
-                                <option value="">所有板塊</option>
-                                {% for eng, zh in sector_map.items() %}
-                                <option value="{{ zh }}" {% if current_sector == zh %}selected{% endif %}>{{ zh }}</option>
-                                {% endfor %}
-                            </select>
-                            <select name="industry" class="form-select" style="max-width: 150px;">
-                                <option value="">所有細分板塊</option>
-                                {% for eng, zh in industry_map.items() %}
-                                <option value="{{ zh }}" {% if current_industry == zh %}selected{% endif %}>{{ zh }}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="input-group-text">最小市值(億)</span>
-                            <input type="number" name="min_market_cap" class="form-control" min="0" step="0.1" style="max-width: 100px;" value="{{ min_market_cap if min_market_cap is not none else '' }}">
                             <button class="btn btn-outline-primary" type="submit">搜尋</button>
-                            {% if search or min_market_cap is not none or current_sector or current_industry or show_bookmarks_only %}
-                            <a href="/?sort={{ sort_by }}&order={{ order }}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="btn btn-outline-secondary">清除</a>
-                            {% endif %}
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6 col-md-3">
+                                <select name="sector" class="form-select form-select-sm">
+                                    <option value="">所有板塊</option>
+                                    {% for eng, zh in sector_map.items() %}
+                                    <option value="{{ zh }}" {% if current_sector == zh %}selected{% endif %}>{{ zh }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select name="industry" class="form-select form-select-sm">
+                                    <option value="">所有細分板塊</option>
+                                    {% for eng, zh in industry_map.items() %}
+                                    <option value="{{ zh }}" {% if current_industry == zh %}selected{% endif %}>{{ zh }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">最小市值</span>
+                                    <input type="number" name="min_market_cap" class="form-control" min="0" step="0.1" value="{{ min_market_cap if min_market_cap is not none else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                {% if search or min_market_cap is not none or current_sector or current_industry or show_bookmarks_only %}
+                                <a href="/?sort={{ sort_by }}&order={{ order }}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="btn btn-outline-secondary btn-sm w-100">清除篩選</a>
+                                {% else %}
+                                <button class="btn btn-outline-secondary btn-sm w-100" disabled>已清除</button>
+                                {% endif %}
+                            </div>
                         </div>
                     </form>
-                    <form action="/" method="get" class="d-flex align-items-center me-3 mb-2 mb-md-0">
+                </div>
+
+                <!-- 日期選擇和回放 -->
+                <div class="w-100 mb-3">
+                    <form action="/" method="get" class="d-flex flex-wrap gap-2 align-items-center">
                         <input type="hidden" name="sort" value="{{ sort_by }}">
                         <input type="hidden" name="order" value="{{ order }}">
                         {% if search %}
@@ -81,91 +210,126 @@
                         {% if recent_listing_months is not none %}
                         <input type="hidden" name="recent_listing_months" value="{{ recent_listing_months }}">
                         {% endif %}
-                        <span class="me-2 text-muted small">基準日</span>
-                        <input type="date" name="base_date" class="form-control form-control-sm me-2" style="width: 160px;" min="{{ earliest_date }}" max="{{ latest_date }}" value="{{ base_date }}">
-                        <button class="btn btn-sm btn-outline-dark me-2" type="submit">回放</button>
+                        <div class="input-group input-group-sm flex-grow-1" style="min-width: 140px;">
+                            <span class="input-group-text d-none d-md-inline">基準日</span>
+                            <input type="date" name="base_date" class="form-control form-control-sm" min="{{ earliest_date }}" max="{{ latest_date }}" value="{{ base_date }}">
+                        </div>
+                        <button class="btn btn-sm btn-outline-dark" type="submit">回放</button>
                         <a href="/?sort={{ sort_by }}&order={{ order }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if current_sector %}&sector={{ current_sector|urlencode }}{% endif %}{% if current_industry %}&industry={{ current_industry|urlencode }}{% endif %}{% if show_bookmarks_only %}&bookmarks_only=1{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="btn btn-sm btn-outline-secondary">最新</a>
                     </form>
-                    <div class="input-group input-group-sm me-2 mb-2 mb-md-0" style="width: 90px;">
-                        <span class="input-group-text">月</span>
-                        <input id="listing-months-input" type="number" class="form-control" min="1" step="1" value="{{ recent_listing_months if recent_listing_months is not none else 24 }}">
-                    </div>
-                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group" aria-label="次新股切換">
-                        <button id="listing-filter-all-btn" type="button" class="btn {{ 'btn-secondary text-white' if recent_listing_months is none else 'btn-outline-secondary' }}">全部</button>
-                        <button id="listing-filter-recent-btn" type="button" class="btn {{ 'btn-info text-white' if recent_listing_months is not none else 'btn-outline-info' }}">只看次新股</button>
-                    </div>
-                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group">
-                        <button id="toggle-highlight-btn" type="button" class="btn btn-outline-warning">只看高亮行</button>
-                    </div>
-                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group">
-                        <a href="/?bookmarks_only={{ '0' if show_bookmarks_only else '1' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if current_sector %}&sector={{ current_sector|urlencode }}{% endif %}{% if current_industry %}&industry={{ current_industry|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" 
-                           class="btn {{ 'btn-warning' if show_bookmarks_only else 'btn-outline-warning' }}">
-                            {{ '顯示全部' if show_bookmarks_only else '只看書籤' }}
-                        </a>
-                    </div>
-                    <div class="btn-group btn-group-sm me-3 mb-2 mb-md-0" role="group">
-                        <button id="sync-hkex-btn" type="button" class="btn btn-primary" title="同步最近 5 天港交所持股數據">同步今日持股</button>
-                    </div>
-                    <div class="text-muted small">
-                        基準日: {{ base_date }}
-                        &nbsp;|&nbsp;最新日: {{ latest_date }}
-                        {% if min_market_cap is not none %}
-                        &nbsp;|&nbsp;最小市值: {{ "%.1f"|format(min_market_cap) }} 億
-                        {% endif %}
-                        {% if recent_listing_months is not none %}
-                        &nbsp;|&nbsp;次新股: {{ recent_listing_months }} 個月內
-                        {% endif %}
+                </div>
+
+                <!-- 按鈕控制區 -->
+                <div class="w-100 mb-2">
+                    <div class="row g-1">
+                        <div class="col-6 col-sm-4 col-md-auto">
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <button id="listing-filter-all-btn" type="button" class="btn {{ 'btn-secondary text-white' if recent_listing_months is none else 'btn-outline-secondary' }} flex-grow-1">全部</button>
+                                <button id="listing-filter-recent-btn" type="button" class="btn {{ 'btn-info text-white' if recent_listing_months is not none else 'btn-outline-info' }} flex-grow-1">次新股</button>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-auto">
+                            <button id="toggle-highlight-btn" type="button" class="btn btn-sm btn-outline-warning w-100">高亮行</button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-auto">
+                            <a href="/?bookmarks_only={{ '0' if show_bookmarks_only else '1' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if current_sector %}&sector={{ current_sector|urlencode }}{% endif %}{% if current_industry %}&industry={{ current_industry|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" 
+                               class="btn btn-sm {{ 'btn-warning' if show_bookmarks_only else 'btn-outline-warning' }} w-100">
+                                {{ '全部' if show_bookmarks_only else '書籤' }}
+                            </a>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-auto">
+                            <button id="sync-hkex-btn" type="button" class="btn btn-sm btn-primary w-100" title="同步最近 5 天港交所持股數據">同步</button>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">次新月數</span>
+                                <input id="listing-months-input" type="number" class="form-control" min="1" step="1" value="{{ recent_listing_months if recent_listing_months is not none else 24 }}">
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center flex-wrap mt-2">
-                    <div class="input-group input-group-sm me-2" style="width: 180px;">
-                        <span class="input-group-text">上限數量</span>
-                        <input id="bulk-limit-input" type="number" class="form-control" min="1" step="1" value="20">
+
+                <!-- 數據刷新控制區 -->
+                <div class="w-100 mb-2">
+                    <div class="row g-1">
+                        <div class="col-6 col-md-auto">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text d-none d-md-inline">上限</span>
+                                <input id="bulk-limit-input" type="number" class="form-control" min="1" step="1" value="20">
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-auto">
+                            <button id="bulk-refresh-btn" class="btn btn-sm btn-outline-danger w-100">批量更新</button>
+                        </div>
+                        <div class="col-6 col-md-auto">
+                            <button id="bulk-refresh-force-btn" class="btn btn-sm btn-outline-warning w-100">強制更新</button>
+                        </div>
+                        <div class="col-6 col-md-auto">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text d-none d-md-inline">上市</span>
+                                <input id="listing-limit-input" type="number" class="form-control" min="1" step="1" value="20">
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-auto">
+                            <button id="listing-refresh-btn" class="btn btn-sm btn-outline-secondary w-100">上市日</button>
+                        </div>
+                        <div class="col-6 col-md-auto">
+                            <button id="concentration-refresh-btn" class="btn btn-sm btn-outline-success w-100">集中度</button>
+                        </div>
                     </div>
-                    <button id="bulk-refresh-btn" class="btn btn-sm btn-outline-danger me-2">批量更新缺失 - 市值/詳細</button>
-                    <button id="bulk-refresh-force-btn" class="btn btn-sm btn-outline-warning me-3">強制批量更新 - 市值/詳細</button>
-                    <div class="input-group input-group-sm me-2" style="width: 130px;">
-                        <span class="input-group-text">上限</span>
-                        <input id="listing-limit-input" type="number" class="form-control" min="1" step="1" value="20">
+                </div>
+
+                <!-- 狀態提示 -->
+                <div class="w-100 mb-2">
+                    <div class="text-muted small">
+                        <div class="row g-2">
+                            <div class="col-6">基準日: <strong>{{ base_date }}</strong></div>
+                            <div class="col-6">最新日: <strong>{{ latest_date }}</strong></div>
+                            {% if min_market_cap is not none %}
+                            <div class="col-6">最小市值: <strong>{{ "%.1f"|format(min_market_cap) }} 億</strong></div>
+                            {% endif %}
+                            {% if recent_listing_months is not none %}
+                            <div class="col-6">次新股: <strong>{{ recent_listing_months }} 個月</strong></div>
+                            {% endif %}
+                        </div>
                     </div>
-                    <button id="listing-refresh-btn" class="btn btn-sm btn-outline-secondary me-3">更新上市日</button>
-                    <button id="concentration-refresh-btn" class="btn btn-sm btn-outline-success me-2">批量更新集中度</button>
-                    <button id="concentration-refresh-force-btn" class="btn btn-sm btn-outline-success me-3">強制批量更新集中度</button>
-                    <div class="text-muted mt-1 mt-md-0" style="font-size: 0.68rem; line-height: 1.25;">
-                        <div>
-                            {% if missing_market_cap_count > 0 %}
-                            <span class="text-warning fw-bold">⚠ 缺市值: {{ missing_market_cap_count }} 檔</span>
-                            {% else %}
-                            <span class="text-success">✓ 市值完整</span>
-                            {% endif %}
-                        </div>
-                        <div>
-                            {% if missing_listing_date_count > 0 %}
-                            <span class="text-secondary">⚠ 缺上市日: {{ missing_listing_date_count }} 檔</span>
-                            {% else %}
-                            <span class="text-success">✓ 上市日完整</span>
-                            {% endif %}
-                        </div>
-                        <div>
-                            {% if missing_turnover_count > 0 %}
-                            <span class="text-secondary">⚠ 缺換手率: {{ missing_turnover_count }} 檔</span>
-                            {% else %}
-                            <span class="text-success">✓ 換手率完整</span>
-                            {% endif %}
-                        </div>
-                        <div>
-                            {% if missing_vr5d_count > 0 %}
-                            <span class="text-secondary">⚠ 缺量比(5日): {{ missing_vr5d_count }} 檔</span>
-                            {% else %}
-                            <span class="text-success">✓ 量比(5日)完整</span>
-                            {% endif %}
-                        </div>
-                        <div>
-                            {% if missing_vr20d_count > 0 %}
-                            <span class="text-secondary">⚠ 缺量比(20日): {{ missing_vr20d_count }} 檔</span>
-                            {% else %}
-                            <span class="text-success">✓ 量比(20日)完整</span>
-                            {% endif %}
+                    <div class="mt-1" style="font-size: 0.68rem; line-height: 1.25;">
+                        <div class="row g-1">
+                            <div class="col-6 col-sm-4">
+                                {% if missing_market_cap_count > 0 %}
+                                <span class="text-warning fw-bold">⚠ 缺市值: {{ missing_market_cap_count }}</span>
+                                {% else %}
+                                <span class="text-success">✓ 市值完整</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                {% if missing_listing_date_count > 0 %}
+                                <span class="text-secondary">⚠ 缺上市日: {{ missing_listing_date_count }}</span>
+                                {% else %}
+                                <span class="text-success">✓ 上市日完整</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                {% if missing_turnover_count > 0 %}
+                                <span class="text-secondary">⚠ 缺換手率: {{ missing_turnover_count }}</span>
+                                {% else %}
+                                <span class="text-success">✓ 換手率完整</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                {% if missing_vr5d_count > 0 %}
+                                <span class="text-secondary">⚠ 缺量比5: {{ missing_vr5d_count }}</span>
+                                {% else %}
+                                <span class="text-success">✓ 量比5完整</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                {% if missing_vr20d_count > 0 %}
+                                <span class="text-secondary">⚠ 缺量比20: {{ missing_vr20d_count }}</span>
+                                {% else %}
+                                <span class="text-success">✓ 量比20完整</span>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -176,22 +340,22 @@
             <table class="table table-hover mb-0 text-center">
                 <thead class="table-dark">
                     <tr>
-                        <th style="width: 40px;"></th>
+                        <th style="width: 40px;" class="hide-on-mobile"></th>
                         <th class="text-start">代碼</th>
-                        <th class="text-start">名稱</th>
-                        <th><a href="/?sort=listing_date&order={{ 'ASC' if sort_by=='listing_date' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">上市日 {{ '▼' if sort_by=='listing_date' and order=='DESC' else ('▲' if sort_by=='listing_date' else '') }}</a></th>
+                        <th class="text-start d-none d-md-table-cell">名稱</th>
+                        <th class="d-none d-lg-table-cell"><a href="/?sort=listing_date&order={{ 'ASC' if sort_by=='listing_date' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">上市日 {{ '▼' if sort_by=='listing_date' and order=='DESC' else ('▲' if sort_by=='listing_date' else '') }}</a></th>
                         <th>
                             <a href="/?sort=turnover_rate_float&order={{ 'ASC' if sort_by=='turnover_rate_float' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.8rem;">
                                 詳細 {{ '▼' if sort_by=='turnover_rate_float' and order=='DESC' else ('▲' if sort_by=='turnover_rate_float' else '') }}
                             </a>
-                            <br><small style="font-size: 0.65rem; opacity: 0.8;">
+                            <br><small style="font-size: 0.65rem; opacity: 0.8; display: block;">
                                 <a href="/?sort=volume_ratio_5d&order={{ 'ASC' if sort_by=='volume_ratio_5d' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">量比5</a>
                                 /
                                 <a href="/?sort=volume_ratio_20d&order={{ 'ASC' if sort_by=='volume_ratio_20d' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">量比20</a>
                             </small>
                         </th>
                         <th><a href="/?sort=market_cap&order={{ 'ASC' if sort_by=='market_cap' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none">市值(億) {{ '▼' if sort_by=='market_cap' and order=='DESC' else ('▲' if sort_by=='market_cap' else '') }}</a></th>
-                        <th>股權集中度</th>
+                        <th class="d-none d-lg-table-cell">股權集中度</th>
                         <th>趨勢信號</th>
                         <th>
                             <a href="/?sort=trend_score&order={{ 'ASC' if sort_by=='trend_score' and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.8rem;">
@@ -204,7 +368,7 @@
                             </a>
                         </th>
                         {% for p in display_periods %}
-                        <th{% if p == 'M1' or p == '1m' %} style="border-left: 2px solid rgba(255,255,255,0.5);"{% endif %}>
+                        <th{% if p == 'M1' or p == '1m' %} style="border-left: 2px solid rgba(255,255,255,0.5);"{% endif %} class="d-none d-sm-table-cell">
                             <a href="/?sort=diff_{{ p }}&order={{ 'ASC' if sort_by=='diff_'~p and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.75rem;" title="{{ period_desc[p] }}">
                                 {{ p.replace('_', '-') }}<br><small style="font-size: 0.65rem; opacity: 0.8;">{% if p == 'today' %}{{ base_date }}變動{% else %}{{ period_desc[p] }}{% endif %}</small> {{ '▼' if sort_by=='diff_'~p and order=='DESC' else ('▲' if sort_by=='diff_'~p else '') }}
                             </a>
@@ -213,7 +377,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for stock in stocks %}
                         {% set today_val = stock['diff_today'] %}
                         {% set w1_val = stock['diff_1_7d'] %}
                         {% set m1_val = stock['diff_M1'] %}
@@ -254,7 +417,7 @@
                         {% set w1_not_negative = (w1_val is not none and w1_val >= 0) %}
 
                         <tr class="{{ 'row-highlight' if recent_flow_strong and m1_is_yellow and m1_not_negative and w1_not_negative else '' }}" data-listing="{{ stock.listing_date or '' }}">
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 <button class="btn btn-sm {{ 'btn-warning' if stock.is_bookmarked else 'btn-outline-secondary' }} bookmark-btn" 
                                         data-code="{{ stock.stock_code }}" 
                                         style="padding: 2px 5px; font-size: 0.75rem; min-width: 50px;" 
@@ -263,8 +426,8 @@
                                 </button>
                             </td>
                             <td class="text-start">{{ stock.stock_code }}</td>
-                        <td class="text-start" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stock.stock_name }}</td>
-                        <td class="listing-date-cell" data-code="{{ stock.stock_code }}" style="font-size: 0.8rem; color: #666;">
+                            <td class="text-start d-none d-md-table-cell" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stock.stock_name }}</td>
+                            <td class="listing-date-cell d-none d-lg-table-cell" data-code="{{ stock.stock_code }}" style="font-size: 0.8rem; color: #666;">
                             <div class="listing-date-value">{{ stock.listing_date or '?' }}</div>
                             {% if stock.listing_date and stock.listing_date is string and '-' in stock.listing_date %}
                                 {% set ld_parts = stock.listing_date.split('-') %}
@@ -316,7 +479,7 @@
                             {% endif %}
                             <button class="btn btn-sm btn-outline-primary refresh-btn mt-1" data-code="{{ stock.stock_code }}">更新市值</button>
                         </td>
-                        <td class="concentration-cell {{ 'top5-high-bg' if stock.concentration_top5 is not none and stock.concentration_top5 > 90 else '' }}" data-code="{{ stock.stock_code }}" style="font-size: 0.76rem; line-height: 1.2;">
+                        <td class="concentration-cell d-none d-lg-table-cell {{ 'top5-high-bg' if stock.concentration_top5 is not none and stock.concentration_top5 > 90 else '' }}" data-code="{{ stock.stock_code }}" style="font-size: 0.76rem; line-height: 1.2;">
                             <div>Top5: <span class="conc-top5">{{ "%.2f"|format(stock.concentration_top5) if stock.concentration_top5 is not none else "-" }}</span>%</div>
                             <div>Top10: <span class="conc-top10">{{ "%.2f"|format(stock.concentration_top10) if stock.concentration_top10 is not none else "-" }}</span>%</div>
                             <div>CCASS: <span class="conc-stake">{{ "%.2f"|format(stock.concentration_stake) if stock.concentration_stake is not none else "-" }}</span>%</div>
@@ -456,7 +619,7 @@
                                     {% set trend_up_bg_dark = true %}
                                 {% endif %}
                             {% endif %}
-                            <td class="{{ 'positive' if val and val > 0 else ('negative' if val and val < 0 else '') }} {{ 'trend-up-bg' if trend_up_bg else '' }} {{ 'trend-up-bg-dark' if trend_up_bg_dark else '' }} {{ 'trend-up-bg-yellow' if trend_up_bg_yellow else '' }}" style="font-size: 0.85rem;{% if p == 'M1' or p == '1m' %} border-left: 2px solid #adb5bd;{% endif %}">
+                            <td class="d-none d-sm-table-cell {{ 'positive' if val and val > 0 else ('negative' if val and val < 0 else '') }} {{ 'trend-up-bg' if trend_up_bg else '' }} {{ 'trend-up-bg-dark' if trend_up_bg_dark else '' }} {{ 'trend-up-bg-yellow' if trend_up_bg_yellow else '' }}" style="font-size: 0.85rem;{% if p == 'M1' or p == '1m' %} border-left: 2px solid #adb5bd;{% endif %}">
                                 <div>{{ ("+" if val > 0 else "") ~ "%.3f"|format(val) ~ "%" if val is not none else "-" }}</div>
                             </td>
                         {% endfor %}
