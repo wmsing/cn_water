@@ -387,10 +387,7 @@
                             <button id="toggle-highlight-btn" type="button" class="btn btn-sm btn-outline-warning w-100">高亮行</button>
                         </div>
                         <div class="col-4 col-sm-auto">
-                            <a href="/?bookmarks_only={{ '0' if show_bookmarks_only else '1' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if current_sector %}&sector={{ current_sector|urlencode }}{% endif %}{% if current_industry %}&industry={{ current_industry|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" 
-                               class="btn btn-sm {{ 'btn-warning' if show_bookmarks_only else 'btn-outline-warning' }} w-100">
-                                {{ '全部' if show_bookmarks_only else '書籤' }}
-                            </a>
+                            <button id="toggle-bookmarks-btn" type="button" class="btn btn-sm {{ 'btn-warning text-white' if show_bookmarks_only else 'btn-outline-warning' }} w-100">書籤</button>
                         </div>
                         <div class="col-4 col-sm-auto">
                             <button id="sync-hkex-btn" type="button" class="btn btn-sm btn-primary w-100" title="同步最近 5 天港交所持股數據">同步</button>
@@ -570,7 +567,7 @@
                         {% set m1_not_negative = (m1_val is not none and m1_val >= 0) %}
                         {% set w1_not_negative = (w1_val is not none and w1_val >= 0) %}
 
-                        <tr class="{{ 'row-highlight' if recent_flow_strong and m1_is_yellow and m1_not_negative and w1_not_negative else '' }}" data-listing="{{ stock.listing_date or '' }}">
+                        <tr class="{{ 'row-highlight' if recent_flow_strong and m1_is_yellow and m1_not_negative and w1_not_negative else '' }}" data-listing="{{ stock.listing_date or '' }}" data-code="{{ stock.stock_code }}" data-bookmarked="{{ '1' if stock.is_bookmarked else '0' }}">
                             <td class="d-none d-md-table-cell">
                                 <button class="btn btn-sm {{ 'btn-warning' if stock.is_bookmarked else 'btn-outline-secondary' }} bookmark-btn" 
                                         data-code="{{ stock.stock_code }}" 
@@ -887,14 +884,21 @@
                 });
                 const data = await resp.json();
                 if (data.ok) {
+                    const row = btn.closest('tr');
                     if (data.status === 'marked') {
                         btn.textContent = '已收';
                         btn.classList.remove('btn-outline-secondary');
                         btn.classList.add('btn-warning');
+                        if (row) row.setAttribute('data-bookmarked', '1');
                     } else {
                         btn.textContent = '收藏';
                         btn.classList.remove('btn-warning');
                         btn.classList.add('btn-outline-secondary');
+                        if (row) row.setAttribute('data-bookmarked', '0');
+                    }
+                    // Re-apply filters if bookmarks filter is active
+                    if (showBookmarksOnly) {
+                        applyFilters();
                     }
                 }
             } catch (err) {
@@ -1018,42 +1022,94 @@
             btn.addEventListener('click', () => refreshConcentration(btn.dataset.code, btn));
         });
 
-        // ── 次新股篩選 ──────────────────────────────────────────
+        // ── 次新股篩選 (client-side instant filtering) ──────────────────────────────────────────
         const listingFilterAllBtn = document.getElementById('listing-filter-all-btn');
         const listingFilterRecentBtn = document.getElementById('listing-filter-recent-btn');
         const listingMonthsInput = document.getElementById('listing-months-input');
-        const listingFilterActive = '{{ 1 if recent_listing_months is not none else 0 }}' === '1';
+        const toggleBookmarksBtn = document.getElementById('toggle-bookmarks-btn');
+        
+        let showBookmarksOnly = false;
+        let showRecentOnly = false;
+        let recentMonths = 24;
 
-        function updateRecentListingUrl(months) {
-            const url = new URL(window.location.href);
-            if (months && months > 0) {
-                url.searchParams.set('recent_listing_months', String(months));
-            } else {
-                url.searchParams.delete('recent_listing_months');
+        function calculateMonthsDiff(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return null;
+            const [y, m, d] = [parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])];
+            const baseDate = new Date('{{ base_date }}');
+            const listingDate = new Date(y, m - 1, d);
+            const monthsDiff = (baseDate.getFullYear() - listingDate.getFullYear()) * 12 + 
+                               (baseDate.getMonth() - listingDate.getMonth());
+            return monthsDiff;
+        }
+
+        function applyFilters() {
+            const rows = document.querySelectorAll('tbody tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let show = true;
+                
+                // Filter by bookmarks
+                if (showBookmarksOnly) {
+                    const isBookmarked = row.getAttribute('data-bookmarked') === '1';
+                    show = show && isBookmarked;
+                }
+                
+                // Filter by recent listing
+                if (showRecentOnly) {
+                    const listing = row.getAttribute('data-listing');
+                    const monthsDiff = calculateMonthsDiff(listing);
+                    show = show && (monthsDiff !== null && monthsDiff < recentMonths);
+                }
+                
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+            
+            // Update button styles
+            if (listingFilterAllBtn) {
+                listingFilterAllBtn.classList.toggle('btn-secondary text-white', !showRecentOnly);
+                listingFilterAllBtn.classList.toggle('btn-outline-secondary', showRecentOnly);
             }
-            window.location.href = url.toString();
+            if (listingFilterRecentBtn) {
+                listingFilterRecentBtn.classList.toggle('btn-info text-white', showRecentOnly);
+                listingFilterRecentBtn.classList.toggle('btn-outline-info', !showRecentOnly);
+            }
+            if (toggleBookmarksBtn) {
+                toggleBookmarksBtn.classList.toggle('btn-warning text-white', showBookmarksOnly);
+                toggleBookmarksBtn.classList.toggle('btn-outline-warning', !showBookmarksOnly);
+            }
         }
 
         if (listingFilterAllBtn) {
             listingFilterAllBtn.addEventListener('click', () => {
-                if (listingFilterActive) {
-                    updateRecentListingUrl(null);
-                }
+                showRecentOnly = false;
+                applyFilters();
             });
         }
 
         if (listingFilterRecentBtn) {
             listingFilterRecentBtn.addEventListener('click', () => {
-                const months = parseInt(listingMonthsInput.value, 10) || 24;
-                updateRecentListingUrl(months);
+                showRecentOnly = true;
+                recentMonths = parseInt(listingMonthsInput.value, 10) || 24;
+                applyFilters();
+            });
+        }
+
+        if (toggleBookmarksBtn) {
+            toggleBookmarksBtn.addEventListener('click', () => {
+                showBookmarksOnly = !showBookmarksOnly;
+                applyFilters();
             });
         }
 
         if (listingMonthsInput) {
             listingMonthsInput.addEventListener('change', () => {
-                if (listingFilterActive) {
-                    const months = parseInt(listingMonthsInput.value, 10) || 24;
-                    updateRecentListingUrl(months);
+                if (showRecentOnly) {
+                    recentMonths = parseInt(listingMonthsInput.value, 10) || 24;
+                    applyFilters();
                 }
             });
         }
