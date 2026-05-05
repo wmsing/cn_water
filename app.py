@@ -1875,7 +1875,7 @@ def refresh_listing_dates():
 
 if __name__ == '__main__':
     # 確保 templates 目錄存在
-    os.makedirs("cn_water/templates", exist_ok=True)
+    os.makedirs("templates", exist_ok=True)
     # 禁用調試模式與自動重載以節省記憶體
     port = int(os.getenv('PORT', 5001))
     host = os.getenv('HOST', '0.0.0.0')  # Replit 需要監聽 0.0.0.0
