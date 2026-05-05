@@ -149,12 +149,12 @@
                         {% if recent_listing_months is not none %}
                         <input type="hidden" name="recent_listing_months" value="{{ recent_listing_months }}">
                         {% endif %}
-                        <div class="input-group mb-2">
-                            <input type="text" name="search" class="form-control" placeholder="代碼或名稱..." value="{{ search }}">
-                            <button class="btn btn-outline-primary" type="submit">搜尋</button>
+                        <div class="input-group mb-2 mb-md-0 me-md-2">
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="代碼或名稱..." value="{{ search }}">
+                            <button class="btn btn-outline-primary btn-sm" type="submit">搜尋</button>
                         </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-6 col-md-3">
+                        <div class="row g-2 mb-2 mt-2 mt-md-0">
+                            <div class="col-12 col-sm-6 col-md-3">
                                 <select name="sector" class="form-select form-select-sm">
                                     <option value="">所有板塊</option>
                                     {% for eng, zh in sector_map.items() %}
@@ -162,7 +162,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-6 col-md-3">
+                            <div class="col-12 col-sm-6 col-md-3">
                                 <select name="industry" class="form-select form-select-sm">
                                     <option value="">所有細分板塊</option>
                                     {% for eng, zh in industry_map.items() %}
@@ -170,13 +170,13 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-6 col-md-3">
+                            <div class="col-12 col-sm-6 col-md-3">
                                 <div class="input-group input-group-sm">
-                                    <span class="input-group-text">最小市值</span>
-                                    <input type="number" name="min_market_cap" class="form-control" min="0" step="0.1" value="{{ min_market_cap if min_market_cap is not none else '' }}">
+                                    <span class="input-group-text" style="font-size: 0.8rem; padding: 0.3rem 0.4rem;">市值(億)</span>
+                                    <input type="number" name="min_market_cap" class="form-control form-control-sm" min="0" step="0.1" placeholder="0" value="{{ min_market_cap if min_market_cap is not none else '' }}">
                                 </div>
                             </div>
-                            <div class="col-6 col-md-3">
+                            <div class="col-12 col-sm-6 col-md-3">
                                 {% if search or min_market_cap is not none or current_sector or current_industry or show_bookmarks_only %}
                                 <a href="/?sort={{ sort_by }}&order={{ order }}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="btn btn-outline-secondary btn-sm w-100">清除篩選</a>
                                 {% else %}
