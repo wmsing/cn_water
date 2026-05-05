@@ -202,6 +202,16 @@
                 padding: 2px 4px !important;
                 margin-top: 3px !important;
             }
+            
+            /* 隱藏手機版的同步和批量更新按鈕 */
+            #sync-hkex-btn { display: none !important; }
+            #bulk-refresh-btn { display: none !important; }
+            #bulk-refresh-force-btn { display: none !important; }
+            #listing-refresh-btn { display: none !important; }
+            #concentration-refresh-btn { display: none !important; }
+            
+            /* 隱藏手機版的缺xxx狀態提示 */
+            .mt-1[style*="font-size: 0.68rem"] { display: none !important; }
         }
 
         @media (max-width: 768px) and (min-width: 577px) {
