@@ -213,6 +213,9 @@
             /* 隱藏手機版的批量更新行（上限 input） */
             .bulk-refresh-row { display: none !important; }
             
+            /* 隱藏手機版的上市輸入行 */
+            #listing-limit-input { display: none !important; }
+            
             /* 隱藏手機版的缺xxx狀態提示 */
             .mt-1[style*="font-size: 0.68rem"] { display: none !important; }
         }
@@ -361,8 +364,8 @@
                 <div class="w-100 mb-2">
                     <div class="row g-1">
                         <!-- 全部 + 次新股 在同一行 -->
-                        <div class="col-12 col-sm-auto">
-                            <div class="btn-group btn-group-sm w-100" role="group">
+                        <div class="col-auto">
+                            <div class="btn-group btn-group-sm" role="group">
                                 <button id="listing-filter-all-btn" type="button" class="btn {{ 'btn-secondary text-white' if recent_listing_months is none else 'btn-outline-secondary' }} flex-grow-1">全部</button>
                                 <button id="listing-filter-recent-btn" type="button" class="btn {{ 'btn-info text-white' if recent_listing_months is not none else 'btn-outline-info' }} flex-grow-1">次新股</button>
                             </div>
