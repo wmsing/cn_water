@@ -1,1 +1,1 @@
-run = "sh -c 'python3 -m pip install -q -r requirements.txt && python3 app_minimal.py'"
+run = "pip install -q -r requirements.txt && python app_minimal.py"
