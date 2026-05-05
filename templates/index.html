@@ -217,6 +217,9 @@
             /* 隱藏手機版的上市輸入行 */
             #listing-limit-input { display: none !important; }
             
+            /* 隱藏手機版的整個數據刷新控制區 */
+            .data-refresh-section { display: none !important; }
+            
             /* 隱藏手機版的缺xxx狀態提示 */
             .mt-1[style*="font-size: 0.68rem"] { display: none !important; }
         }
@@ -364,6 +367,14 @@
                 <!-- 按鈕控制區 -->
                 <div class="w-100 mb-2">
                     <div class="row g-1">
+                           <!-- 次新月數輸入 -->
+                        <div class="col-auto">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">次新月數</span>
+                                <input id="listing-months-input" type="number" class="form-control" min="1" step="1" value="{{ recent_listing_months if recent_listing_months is not none else 24 }}">
+                            </div>
+                        </div>
+                        
                         <!-- 全部 + 次新股 在同一行 -->
                         <div class="col-auto">
                             <div class="btn-group btn-group-sm" role="group">
@@ -384,18 +395,12 @@
                         <div class="col-4 col-sm-auto">
                             <button id="sync-hkex-btn" type="button" class="btn btn-sm btn-primary w-100" title="同步最近 5 天港交所持股數據">同步</button>
                         </div>
-                        <!-- 次新月數輸入 -->
-                        <div class="col-auto">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">次新月數</span>
-                                <input id="listing-months-input" type="number" class="form-control" min="1" step="1" value="{{ recent_listing_months if recent_listing_months is not none else 24 }}">
-                            </div>
-                        </div>
+                     
                     </div>
                 </div>
 
                 <!-- 數據刷新控制區 -->
-                <div class="w-100 mb-2">
+                <div class="w-100 mb-2 data-refresh-section">
                     <!-- 批量更新行 -->
                     <div class="row g-1 bulk-refresh-row">
                         <div class="col-auto">
