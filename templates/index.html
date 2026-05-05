@@ -232,6 +232,29 @@
         @media (min-width: 769px) {
             .hide-on-mobile { display: table-cell !important; }
         }
+
+        /* Bulk refresh row on mobile */
+        @media (max-width: 576px) {
+            .bulk-refresh-row {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 4px !important;
+                align-items: center;
+            }
+            .bulk-refresh-row > div {
+                flex: 1 1 auto !important;
+                min-width: 0;
+            }
+            .bulk-refresh-row .input-group {
+                display: flex !important;
+            }
+            .bulk-refresh-row .btn {
+                width: 100% !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
     </style>
 </head>
 <body>
@@ -356,19 +379,23 @@
 
                 <!-- 數據刷新控制區 -->
                 <div class="w-100 mb-2">
-                    <div class="row g-1">
-                        <div class="col-6 col-md-auto">
+                    <!-- 批量更新行 -->
+                    <div class="row g-1 bulk-refresh-row">
+                        <div class="col-auto">
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text d-none d-md-inline">上限</span>
-                                <input id="bulk-limit-input" type="number" class="form-control" min="1" step="1" value="20">
+                                <span class="input-group-text">上限</span>
+                                <input id="bulk-limit-input" type="number" class="form-control" min="1" step="1" value="20" style="width: 50px;">
                             </div>
                         </div>
-                        <div class="col-6 col-md-auto">
+                        <div class="col-auto flex-grow-1" style="min-width: 120px;">
                             <button id="bulk-refresh-btn" class="btn btn-sm btn-outline-danger w-100">批量更新股票資料</button>
                         </div>
-                        <div class="col-6 col-md-auto">
+                        <div class="col-auto flex-grow-1" style="min-width: 120px;">
                             <button id="bulk-refresh-force-btn" class="btn btn-sm btn-outline-warning w-100">強制更新股票資料</button>
                         </div>
+                    </div>
+                    <!-- 其他功能行 -->
+                    <div class="row g-1 mt-2">
                         <div class="col-6 col-md-auto">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text d-none d-md-inline">上市</span>
