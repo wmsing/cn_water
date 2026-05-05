@@ -43,9 +43,9 @@
             select.form-select { flex: 1 1 auto; min-width: 80px; }
             .input-group button { flex: 0 0 auto; }
             
-            /* 表格改進 */
+            /* 表格改進 - 允許水平滾動 */
             .table th, .table td { 
-                white-space: normal; 
+                white-space: nowrap; 
                 padding: 0.3rem 0.25rem; 
                 font-size: 0.75rem;
             }
@@ -53,17 +53,15 @@
             
             /* 隐藏非关键列 */
             .hide-on-mobile { display: none !important; }
-            th[style*="width: 40px"], 
-            .concentration-cell,
-            .detail-hot-bg .detail-52w,
-            .detail-hot-bg .detail-industry {
-                display: none !important;
-            }
+            .d-none.d-md-table-cell { display: none !important; }
+            th[style*="width: 40px"] { display: none !important; }
             
             /* 簡化表格顯示 */
             .table-scroll-wrapper { 
                 max-height: calc(100vh - 120px);
                 border-radius: 0.25rem;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
             .bookmark-btn { 
                 padding: 2px 4px !important; 
@@ -74,7 +72,7 @@
             /* 名稱欄改進 */
             td.text-start { 
                 word-break: break-word; 
-                white-space: normal;
+                white-space: nowrap;
             }
             
             /* 按鈕欄改進 */
@@ -368,7 +366,7 @@
                             </a>
                         </th>
                         {% for p in display_periods %}
-                        <th{% if p == 'M1' or p == '1m' %} style="border-left: 2px solid rgba(255,255,255,0.5);"{% endif %} class="d-none d-sm-table-cell">
+                        <th{% if p == 'M1' or p == '1m' %} style="border-left: 2px solid rgba(255,255,255,0.5);"{% endif %}>
                             <a href="/?sort=diff_{{ p }}&order={{ 'ASC' if sort_by=='diff_'~p and order=='DESC' else 'DESC' }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if base_date %}&base_date={{ base_date }}{% endif %}{% if min_market_cap is not none %}&min_market_cap={{ min_market_cap }}{% endif %}{% if recent_listing_months is not none %}&recent_listing_months={{ recent_listing_months }}{% endif %}" class="text-white text-decoration-none" style="font-size: 0.75rem;" title="{{ period_desc[p] }}">
                                 {{ p.replace('_', '-') }}<br><small style="font-size: 0.65rem; opacity: 0.8;">{% if p == 'today' %}{{ base_date }}變動{% else %}{{ period_desc[p] }}{% endif %}</small> {{ '▼' if sort_by=='diff_'~p and order=='DESC' else ('▲' if sort_by=='diff_'~p else '') }}
                             </a>
@@ -619,7 +617,7 @@
                                     {% set trend_up_bg_dark = true %}
                                 {% endif %}
                             {% endif %}
-                            <td class="d-none d-sm-table-cell {{ 'positive' if val and val > 0 else ('negative' if val and val < 0 else '') }} {{ 'trend-up-bg' if trend_up_bg else '' }} {{ 'trend-up-bg-dark' if trend_up_bg_dark else '' }} {{ 'trend-up-bg-yellow' if trend_up_bg_yellow else '' }}" style="font-size: 0.85rem;{% if p == 'M1' or p == '1m' %} border-left: 2px solid #adb5bd;{% endif %}">
+                            <td class="{{ 'positive' if val and val > 0 else ('negative' if val and val < 0 else '') }} {{ 'trend-up-bg' if trend_up_bg else '' }} {{ 'trend-up-bg-dark' if trend_up_bg_dark else '' }} {{ 'trend-up-bg-yellow' if trend_up_bg_yellow else '' }}" style="font-size: 0.85rem;{% if p == 'M1' or p == '1m' %} border-left: 2px solid #adb5bd;{% endif %}">
                                 <div>{{ ("+" if val > 0 else "") ~ "%.3f"|format(val) ~ "%" if val is not none else "-" }}</div>
                             </td>
                         {% endfor %}
