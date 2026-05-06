@@ -512,6 +512,7 @@ def api_toggle_bookmark():
 
 
 @app.route('/')
+@app.route('/app')
 def index():
     sort_by = request.args.get('sort', 'curr_pct')
     order = request.args.get('order', 'DESC').upper()

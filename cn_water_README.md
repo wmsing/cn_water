@@ -24,16 +24,8 @@ python cn_water/app.py
 2. **批量更新市值**：從 yfinance 同步最新股價、市值及換手率。
 3. **批量更新集中度**：更新 CCASS 前五/前十券商的持倉集中度。
 
-## 數據庫同步策略
-
-### 推薦方案：共享數據庫（Single Source of Truth）
+## 數據庫同步策略 - 共享數據庫（Single Source of Truth）
 將數據庫上傳到 GitHub，本地和 Replit 使用同一個數據庫。
-
-**優點**：
-- ✅ 數據統一，無須重複同步
-- ✅ 只需本地點一次「同步」按鈕
-- ✅ Replit 自動拉取最新數據
-- ✅ 數據在 GitHub 上備份
 
 **工作流程**：
 ```bash
@@ -48,8 +40,11 @@ git push origin main
 
 # 步驟 3️⃣：Replit 拉取
 cd ~/workspace
-git reset --hard origin/main
+git pull origin main && kill 1 # if not working: git reset --hard origin/main
 # 現在 Replit 和本地使用同一個數據庫！
+
+# restart
+kill 1
 ```
 
 ### 其他方案
